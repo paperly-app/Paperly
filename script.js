@@ -10,112 +10,40 @@ const backBtn = document.getElementById('back-to-catalog-btn');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
 
-// ЗОЛОТОЙ ФОНД: ГАРАНТИРОВАННЫЕ ОРИГИНАЛЬНЫЕ ШЕДЕВРЫ АВТОРОВ
+// ЗОЛОТОЙ ФОНД
 const VERIFIED_AUTHORS = {
   'ницше': [
-    {
-      title: 'Так говорил Заратустра',
-      wiki: 'Так говорил Заратустра (Ницше; Антоновский)',
-      author: 'Фридрих Ницше',
-      snippet: 'Главная книга Ницше. Философская поэма о Сверхчеловеке, воле к власти и вечном возвращении.'
-    },
-    {
-      title: 'По ту сторону добра и зла',
-      wiki: 'По ту сторону добра и зла (Ницше)',
-      author: 'Фридрих Ницше',
-      snippet: 'Прелюдия к философии будущего. Беспощадная критика европейской морали и догм.'
-    },
-    {
-      title: 'Рождение трагедии из духа музыки',
-      wiki: 'Рождение трагедии, или Эллинство и пессимизм (Ницше/Рачинский)',
-      author: 'Фридрих Ницше',
-      snippet: 'Культовый труд об аполлоническом и дионисийском началах в искусстве и жизни.'
-    },
-    {
-      title: 'Сумерки идолов (Падение кумиров)',
-      wiki: 'Падение кумиров (Ницше)',
-      author: 'Фридрих Ницше',
-      snippet: 'Как философствуют молотом. Яркая и острая переоценка всех ценностей.'
-    },
-    {
-      title: 'Человеческое, слишком человеческое',
-      wiki: 'Человеческое, слишком человеческое (Ницше)',
-      author: 'Фридрих Ницше',
-      snippet: 'Книга для свободных умов. Сборник глубоких афоризмов о человеческой природе.'
-    },
-    {
-      title: 'Антихрист',
-      wiki: 'Антихрист (Ницше)',
-      author: 'Фридрих Ницше',
-      snippet: 'Знаменитый философский манифест с критикой религии и упадка культуры.'
-    }
+    { title: 'Так говорил Заратустра', wiki: 'Так говорил Заратустра (Ницше; Антоновский)', author: 'Фридрих Ницше', snippet: 'Главная книга Ницше. Философская поэма о Сверхчеловеке, воле к власти и вечном возвращении.' },
+    { title: 'По ту сторону добра и зла', wiki: 'По ту сторону добра и зла (Ницше)', author: 'Фридрих Ницше', snippet: 'Прелюдия к философии будущего. Беспощадная критика европейской морали и догм.' },
+    { title: 'Рождение трагедии из духа музыки', wiki: 'Рождение трагедии, или Эллинство и пессимизм (Ницше/Рачинский)', author: 'Фридрих Ницше', snippet: 'Культовый труд об аполлоническом и дионисийском началах в искусстве и жизни.' },
+    { title: 'Сумерки идолов (Падение кумиров)', wiki: 'Падение кумиров (Ницше)', author: 'Фридрих Ницше', snippet: 'Как философствуют молотом. Яркая и острая переоценка всех ценностей.' },
+    { title: 'Человеческое, слишком человеческое', wiki: 'Человеческое, слишком человеческое (Ницше)', author: 'Фридрих Ницше', snippet: 'Книга для свободных умов. Сборник глубоких афоризмов о человеческой природе.' },
+    { title: 'Антихрист', wiki: 'Антихрист (Ницше)', author: 'Фридрих Ницше', snippet: 'Знаменитый философский манифест с критикой религии и упадка культуры.' }
   ],
   'достоевский': [
-    {
-      title: 'Преступление и наказание',
-      wiki: 'Преступление и наказание (Достоевский)',
-      author: 'Фёдор Достоевский',
-      snippet: 'Петербург, Раскольников и теория о «тварях дрожащих» и «право имеющих».'
-    },
-    {
-      title: 'Белые ночи',
-      wiki: 'Белые ночи (Достоевский)',
-      author: 'Фёдор Достоевский',
-      snippet: 'Сентиментальный роман из воспоминаний мечтателя под петербургским небом.'
-    },
-    {
-      title: 'Идиот',
-      wiki: 'Идиот (роман)',
-      author: 'Фёдор Достоевский',
-      snippet: 'Трагическая судьба чистого душой князя Мышкина в порочном обществе.'
-    }
+    { title: 'Преступление и наказание', wiki: 'Преступление и наказание (Достоевский)', author: 'Фёдор Достоевский', snippet: 'Петербург, Раскольников и теория о «тварях дрожащих» и «право имеющих».' },
+    { title: 'Белые ночи', wiki: 'Белые ночи (Достоевский)', author: 'Фёдор Достоевский', snippet: 'Сентиментальный роман из воспоминаний мечтателя под петербургским небом.' },
+    { title: 'Идиот', wiki: 'Идиот (роман)', author: 'Фёдор Достоевский', snippet: 'Трагическая судьба чистого душой князя Мышкина в порочном обществе.' }
   ],
   'толстой': [
-    {
-      title: 'Смерть Ивана Ильича',
-      wiki: 'Смерть Ивана Ильича (Толстой)',
-      author: 'Лев Толстой',
-      snippet: 'Одна из вершин мировой литературы: глубочайшее исследование смысла жизни.'
-    },
-    {
-      title: 'Кавказский пленник',
-      wiki: 'Кавказский пленник (Толстой)',
-      author: 'Лев Толстой',
-      snippet: 'Классическая повесть о дружбе, храбрости и силе человеческого духа.'
-    },
-    {
-      title: 'После бала',
-      wiki: 'После бала (Толстой)',
-      author: 'Лев Толстой',
-      snippet: 'Знаменитый рассказ о любви, чести и жестокой изнанке эпохи.'
-    }
+    { title: 'Смерть Ивана Ильича', wiki: 'Смерть Ивана Ильича (Толстой)', author: 'Лев Толстой', snippet: 'Одна из вершин мировой литературы: глубочайшее исследование смысла жизни.' },
+    { title: 'Кавказский пленник', wiki: 'Кавказский пленник (Толстой)', author: 'Лев Толстой', snippet: 'Классическая повесть о дружбе, храбрости и силе человеческого духа.' },
+    { title: 'После бала', wiki: 'После бала (Толстой)', author: 'Лев Толстой', snippet: 'Знаменитый рассказ о любви, чести и жестокой изнанке эпохи.' }
   ],
   'чехов': [
-    {
-      title: 'Палата № 6',
-      wiki: 'Палата № 6 (Чехов)',
-      author: 'Антон Чехов',
-      snippet: 'Глубокая психологическая повесть о границе между безумием и разумом.'
-    },
-    {
-      title: 'Человек в футляре',
-      wiki: 'Человек в футляре (Чехов)',
-      author: 'Антон Чехов',
-      snippet: 'Бессмертный рассказ об учителе Беликове, панически боявшемся реальной жизни.'
-    }
+    { title: 'Палата № 6', wiki: 'Палата № 6 (Чехов)', author: 'Антон Чехов', snippet: 'Глубокая психологическая повесть о границе между безумием и разумом.' },
+    { title: 'Человек в футляре', wiki: 'Человек в футляре (Чехов)', author: 'Антон Чехов', snippet: 'Бессмертный рассказ об учителе Беликове, панически боявшемся реальной жизни.' }
   ]
 };
 
-// 1. ПОИСК В БИБЛИОТЕКЕ С ФИЛЬТРАЦИЕЙ МУСОРА
+// ПОИСК
 async function searchBooks(query = 'Ницше') {
   const cleanQuery = query.trim().toLowerCase();
   if (!cleanQuery) return;
 
   booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Отбираем оригинальные произведения...</div>';
-
   let finalCards = [];
 
-  // А) Сначала проверяем верифицированную полку оригиналов
   for (const authorKey in VERIFIED_AUTHORS) {
     if (cleanQuery.includes(authorKey) || authorKey.includes(cleanQuery)) {
       finalCards = VERIFIED_AUTHORS[authorKey].map(b => ({
@@ -129,26 +57,19 @@ async function searchBooks(query = 'Ницше') {
     }
   }
 
-  // Б) Затем запрашиваем архив, но с жестким фильтром от энциклопедического спама
   try {
     const url = `https://ru.wikisource.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.trim())}&srlimit=35&srnamespace=0&format=json&origin=*`;
     const res = await fetch(url);
     const data = await res.json();
     const results = data.query?.search || [];
 
-    // ЧЕРНЫЙ СПИСОК СЛОВАРЕЙ И ЭНЦИКЛОПЕДИЙ
     const banList = ['ЭСБЕ', 'БСЭ', 'МЭСБЕ', 'РБС', 'ВЭ', 'ЕЭБЕ', 'НЭС', 'ПБЭ', 'БЭЮ', 'Категория', 'Викитека', 'Указатель'];
 
     results.forEach(item => {
       const t = item.title;
-
-      // 1. Блокируем энциклопедии
       if (banList.some(ban => t.startsWith(ban + '/') || t.includes(ban))) return;
-      // 2. Блокируем подглавы оглавлений
       if (t.includes('/От переводчика') || t.includes('/Предисловие') || t.includes('/Примечания') || t.endsWith('/ДО')) return;
-      // 3. Блокируем чужие статьи о Ницше (Минский, Нордау, Белый и т.д.)
       if (t.includes('/Фридрих Ницше') || t.startsWith('Вырождение/')) return;
-      // 4. Не дублируем то, что уже добавлено из оригинальной полки
       if (finalCards.some(c => c.cleanTitle.toLowerCase() === t.toLowerCase())) return;
 
       let cleanTitle = t.replace(/\s*\(.*?\)/g, '');
@@ -166,18 +87,14 @@ async function searchBooks(query = 'Ницше') {
 
     renderBookCards(finalCards);
   } catch (err) {
-    if (finalCards.length > 0) {
-      renderBookCards(finalCards);
-    } else {
-      booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения. Проверьте интернет!</div>';
-    }
+    if (finalCards.length > 0) renderBookCards(finalCards);
+    else booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения. Проверьте интернет!</div>';
   }
 }
 
-// 2. ОТРИСОВКА КАРТОЧЕК
+// ОТРИСОВКА КАРТОЧЕК
 function renderBookCards(cards) {
   booksGrid.innerHTML = '';
-
   if (cards.length === 0) {
     booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Ничего не найдено. Попробуйте другой запрос!</div>';
     return;
@@ -186,8 +103,6 @@ function renderBookCards(cards) {
   cards.forEach(book => {
     const card = document.createElement('div');
     card.className = 'book-card';
-    
-    // Золотая рамочка для оригинальных шедевров
     if (book.isVerified) {
       card.style.borderColor = '#c98a4b';
       card.style.boxShadow = '0 15px 35px rgba(201, 138, 75, 0.15)';
@@ -207,7 +122,7 @@ function renderBookCards(cards) {
   });
 }
 
-// 3. СКАЧИВАНИЕ И СКЛЕЙКА ГЛАВ
+// СКАЧИВАНИЕ И СКЛЕЙКА
 async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   loadingOverlay.style.display = 'flex';
   loadingStatus.textContent = `Скачиваем «${displayTitle}»...`;
@@ -230,7 +145,6 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
 
     let text = tempDiv.innerText.trim();
 
-    // СКЛЕИВАЕМ ВСЕ ГЛАВЫ В ОДНУ КНИГУ
     if (text.length < 2500 && data.parse.links) {
       const subchapters = data.parse.links
         .filter(l => l['*'].startsWith(rawTitle + '/') && !l['*'].endsWith('/ДО'))
@@ -262,13 +176,10 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
         const loadedChapters = await Promise.all(chapterPromises);
         const fullCombined = loadedChapters.filter(t => t.length > 50).join('\n\n');
 
-        if (fullCombined.length > 500) {
-          text = fullCombined;
-        }
+        if (fullCombined.length > 500) text = fullCombined;
       }
     }
 
-    // Чистка от бюрократии
     const lines = text.split(/\r?\n/);
     const cleanLines = lines.filter(line => {
       const l = line.toLowerCase();
@@ -302,7 +213,7 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   }
 }
 
-// 4. НАРЕЗКА НА РАЗВОРОТЫ
+// НАРЕЗКА НА СТРАНИЦЫ
 function autoSplitTextToPages(rawText) {
   const charsPerPage = 750;
   const paragraphs = rawText.split(/\r?\n/);
@@ -331,14 +242,11 @@ function autoSplitTextToPages(rawText) {
   }
   if (currentPage && pages.length < 350) pages.push(currentPage);
 
-  if (pages.length % 2 !== 0) {
-    pages.push(' ');
-  }
-
+  if (pages.length % 2 !== 0) pages.push(' ');
   return pages;
 }
 
-// 5. ОТКРЫТИЕ 3D-КНИГИ
+// ОТКРЫТИЕ 3D-КНИГИ
 function openBookReader(title, author, pages) {
   catalogView.style.display = 'none';
   readerView.style.display = 'flex';
@@ -419,13 +327,46 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') currentFlipBook.flipPrev();
 });
 
-// СВЕТ
+// ЛОГИКА ЗАЩИТЫ ГЛАЗ И ВСПЛЫВАЮЩЕЙ ТАБЛИЧКИ
 const overlay = document.getElementById('warm-overlay');
 const toggleBtn = document.getElementById('warm-toggle-btn');
+const modal = document.getElementById('modal-backdrop');
+const btnTurnOn = document.getElementById('btn-turn-on');
+const btnTurnOff = document.getElementById('btn-turn-off');
+
+function activateWarmMode() {
+  overlay.classList.add('active');
+  toggleBtn.textContent = '☀️ Обычный свет';
+}
+
+function deactivateWarmMode() {
+  overlay.classList.remove('active');
+  toggleBtn.textContent = '🕯️ Защита глаз';
+}
+
+function closeModal() {
+  if (modal) {
+    modal.style.opacity = '0';
+    setTimeout(() => modal.remove(), 500);
+  }
+}
+
+if (btnTurnOn) {
+  btnTurnOn.addEventListener('click', () => {
+    activateWarmMode();
+    closeModal();
+  });
+}
+
+if (btnTurnOff) {
+  btnTurnOff.addEventListener('click', () => {
+    closeModal();
+  });
+}
+
 toggleBtn.addEventListener('click', () => {
-  overlay.classList.toggle('active');
-  toggleBtn.textContent = overlay.classList.contains('active') ? '☀️ Обычный свет' : '🕯️ Защита глаз';
+  if (overlay.classList.contains('active')) deactivateWarmMode();
+  else activateWarmMode();
 });
 
-// При запуске ищем Ницше
 searchBooks('Ницше');

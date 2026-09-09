@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Онлайн Библиотека Классики</title>
-  
-  <!-- Подключаем наш файл стилей style.css -->
+  <title>Paperly — Онлайн Читалка</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,6 +11,18 @@
   <!-- Защита глаз -->
   <div id="warm-overlay"></div>
   <button id="warm-toggle-btn">🕯️ Защита глаз</button>
+
+  <!-- ВОТ ОНА: ВСПЛЫВАЮЩАЯ ТАБЛИЧКА ПРИ ВХОДЕ -->
+  <div id="modal-backdrop">
+    <div class="modal-card">
+      <h3>Защита глаз 🕯️</h3>
+      <p>Включить мягкий тёплый свет? Он убирает синее излучение, чтобы глаза отдыхали и не уставали при чтении.</p>
+      <div class="modal-btns">
+        <button class="btn-warm" id="btn-turn-on">Включить</button>
+        <button class="btn-cancel" id="btn-turn-off">Не сейчас</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Индикатор загрузки -->
   <div id="loading-overlay">
@@ -35,24 +45,4 @@
       <button class="tag-btn" onclick="triggerSearch('Ницше')">Ницше</button>
       <button class="tag-btn" onclick="triggerSearch('Заратустра')">Так говорил Заратустра</button>
       <button class="tag-btn" onclick="triggerSearch('Достоевский')">Достоевский</button>
-      <button class="tag-btn" onclick="triggerSearch('Толстой')">Лев Толстой</button>
-      <button class="tag-btn" onclick="triggerSearch('Чехов')">Чехов</button>
-      <button class="tag-btn" onclick="triggerSearch('Пушкин')">Пушкин</button>
-    </div>
-
-    <div class="books-grid" id="books-grid"></div>
-  </div>
-
-  <!-- 2. ЭКРАН ЧИТАЛКИ -->
-  <div id="reader-view">
-    <button id="back-to-catalog-btn">← В каталог</button>
-    <div id="book-wrapper"></div>
-  </div>
-
-  <!-- Движок книги из сети -->
-  <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
-  
-  <!-- Подключаем наш файл скрипта script.js -->
-  <script src="script.js"></script>
-</body>
-</html>
+      <button class="tag-btn" onclick="triggerS
