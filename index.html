@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Paperly — 3D Онлайн Читалка</title>
-  
-  <link rel="stylesheet" href="style.css?v=4">
+  <title>Paperly</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -14,13 +14,13 @@
   <button id="warm-toggle-btn">🕯️ Защита глаз</button>
 
   <!-- Всплывающая табличка при входе -->
-  <div id="modal-backdrop">
+  <div id="modal-backdrop" onclick="handleBackdropClick(event)">
     <div class="modal-card">
       <h3>Защита глаз 🕯️</h3>
       <p>Включить мягкий тёплый свет? Он убирает синее излучение, чтобы глаза отдыхали и не уставали при чтении.</p>
       <div class="modal-btns">
-        <button class="btn-warm" id="btn-turn-on">Включить</button>
-        <button class="btn-cancel" id="btn-turn-off">Не сейчас</button>
+        <button class="btn-warm" id="btn-turn-on" onclick="handleWarmOn()">Включить</button>
+        <button class="btn-cancel" id="btn-turn-off" onclick="closeModal()">Не сейчас</button>
       </div>
     </div>
   </div>
@@ -35,20 +35,21 @@
   <!-- 1. ЭКРАН КАТАЛОГА -->
   <div id="catalog-view">
     <h1 class="catalog-title">ОНЛАЙН БИБЛИОТЕКА</h1>
-    <div class="catalog-subtitle">Глубокий поиск по архивам мировой классики:</div>
+    <div class="catalog-subtitle">Прямой доступ к официальным фондам мировой классики (Викитека):</div>
 
     <div class="search-box">
-      <input type="text" id="search-input" class="search-input" placeholder="Напиши имя автора или название книги...">
+      <input type="text" id="search-input" class="search-input" placeholder="Поиск автора или книги (Шерлок Холмс, Достоевский, Лавкрафт)...">
       <button class="btn-search" id="btn-search">Найти</button>
     </div>
 
-    <div class="tags-container">
-      <button class="tag-btn" onclick="triggerSearch('Ницше')">Ницше</button>
-      <button class="tag-btn" onclick="triggerSearch('Заратустра')">Так говорил Заратустра</button>
-      <button class="tag-btn" onclick="triggerSearch('Достоевский')">Достоевский</button>
-      <button class="tag-btn" onclick="triggerSearch('Толстой')">Лев Толстой</button>
-      <button class="tag-btn" onclick="triggerSearch('Чехов')">Чехов</button>
-      <button class="tag-btn" onclick="triggerSearch('Пушкин')">Пушкин</button>
+    <!-- ОФИЦИАЛЬНЫЕ КАТЕГОРИИ ВИКИТЕКИ -->
+    <div class="filters-bar" id="filters-bar">
+      <button class="filter-btn active" data-category="Категория:Фантастика">🚀 Фантастика</button>
+      <button class="filter-btn" data-category="Категория:Приключенческая литература">🧭 Приключения</button>
+      <button class="filter-btn" data-category="Категория:Сказки">🧚 Сказки</button>
+      <button class="filter-btn" data-category="Категория:Повести">🎭 Повести и классика</button>
+      <button class="filter-btn" data-category="Категория:Философия">📜 Философия</button>
+      <button class="filter-btn" data-category="Категория:Романы">📚 Романы</button>
     </div>
 
     <div class="books-grid" id="books-grid"></div>
@@ -61,6 +62,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=10"></script>
 </body>
 </html>

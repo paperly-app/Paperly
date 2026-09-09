@@ -1,3 +1,60 @@
+/* ==========================================================
+   1. ЛОГИКА ТАБЛИЧКИ И ЗАЩИТЫ ГЛАЗ
+   ========================================================== */
+function activateWarmMode() {
+  const overlay = document.getElementById('warm-overlay');
+  const toggleBtn = document.getElementById('warm-toggle-btn');
+  if (overlay) overlay.classList.add('active');
+  if (toggleBtn) toggleBtn.textContent = '☀️ Обычный';
+}
+
+function deactivateWarmMode() {
+  const overlay = document.getElementById('warm-overlay');
+  const toggleBtn = document.getElementById('warm-toggle-btn');
+  if (overlay) overlay.classList.remove('active');
+  if (toggleBtn) toggleBtn.textContent = '🕯️ Защита глаз';
+}
+
+window.closeModal = function() {
+  const modal = document.getElementById('modal-backdrop');
+  if (modal) {
+    modal.style.opacity = '0';
+    modal.style.pointerEvents = 'none';
+    setTimeout(() => {
+      modal.remove();
+    }, 300);
+  }
+};
+
+window.handleWarmOn = function() {
+  activateWarmMode();
+  window.closeModal();
+};
+
+window.handleBackdropClick = function(event) {
+  if (event.target.id === 'modal-backdrop') {
+    window.closeModal();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const toggleBtn = document.getElementById('warm-toggle-btn');
+  const overlay = document.getElementById('warm-overlay');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if (overlay && overlay.classList.contains('active')) {
+        deactivateWarmMode();
+      } else {
+        activateWarmMode();
+      }
+    });
+  }
+});
+
+
+/* ==========================================================
+   2. ДИНАМИЧЕСКИЙ КАТАЛОГ: АВТОРЫ И КАТЕГОРИИ
+   ========================================================== */
 let currentFlipBook = null;
 
 const booksGrid = document.getElementById('books-grid');
@@ -9,116 +66,162 @@ const bookWrapper = document.getElementById('book-wrapper');
 const backBtn = document.getElementById('back-to-catalog-btn');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
+const filterButtons = document.querySelectorAll('.filter-btn');
 
-// ЗОЛОТОЙ ФОНД ОРИГИНАЛОВ
-const VERIFIED_AUTHORS = {
-  'ницше': [
-    { title: 'Так говорил Заратустра', wiki: 'Так говорил Заратустра (Ницше; Антоновский)', author: 'Фридрих Ницше', snippet: 'Главная книга Ницше. Философская поэма о Сверхчеловеке, воле к власти и вечном возвращении.' },
-    { title: 'По ту сторону добра и зла', wiki: 'По ту сторону добра и зла (Ницше)', author: 'Фридрих Ницше', snippet: 'Прелюдия к философии будущего. Беспощадная критика европейской морали и догм.' },
-    { title: 'Рождение трагедии из духа музыки', wiki: 'Рождение трагедии, или Эллинство и пессимизм (Ницше/Рачинский)', author: 'Фридрих Ницше', snippet: 'Культовый труд об аполлоническом и дионисийском началах в искусстве и жизни.' },
-    { title: 'Сумерки идолов (Падение кумиров)', wiki: 'Падение кумиров (Ницше)', author: 'Фридрих Ницше', snippet: 'Как философствуют молотом. Яркая и острая переоценка всех ценностей.' },
-    { title: 'Человеческое, слишком человеческое', wiki: 'Человеческое, слишком человеческое (Ницше)', author: 'Фридрих Ницше', snippet: 'Книга для свободных умов. Сборник глубоких афоризмов о человеческой природе.' },
-    { title: 'Антихрист', wiki: 'Антихрист (Ницше)', author: 'Фридрих Ницше', snippet: 'Знаменитый философский манифест с критикой религии и упадка культуры.' }
-  ],
-  'пушкин': [
-    { title: 'Пиковая дама', wiki: 'Пиковая дама (Пушкин)', author: 'А. С. Пушкин', snippet: 'Мистическая повесть о тайне трех карт, графине и безумии Германна.' },
-    { title: 'Метель', wiki: 'Метель (повесть)', author: 'А. С. Пушкин', snippet: 'Знаменитая повесть из цикла «Повести Белкина» о судьбоносной игре случая.' },
-    { title: 'Капитанская дочка', wiki: 'Капитанская дочка (Пушкин)', author: 'А. С. Пушкин', snippet: 'Исторический роман о пугачевском бунте, чести и верной любви.' }
-  ],
-  'достоевский': [
-    { title: 'Преступление и наказание', wiki: 'Преступление и наказание (Достоевский)', author: 'Фёдор Достоевский', snippet: 'Петербург, Раскольников и теория о «тварях дрожащих» и «право имеющих».' },
-    { title: 'Белые ночи', wiki: 'Белые ночи (Достоевский)', author: 'Фёдор Достоевский', snippet: 'Сентиментальный роман из воспоминаний мечтателя под петербургским небом.' },
-    { title: 'Идиот', wiki: 'Идиот (роман)', author: 'Фёдор Достоевский', snippet: 'Трагическая судьба чистого душой князя Мышкина в порочном обществе.' }
-  ],
-  'толстой': [
-    { title: 'Смерть Ивана Ильича', wiki: 'Смерть Ивана Ильича (Толстой)', author: 'Лев Толстой', snippet: 'Одна из вершин мировой литературы: глубочайшее исследование смысла жизни.' },
-    { title: 'Кавказский пленник', wiki: 'Кавказский пленник (Толстой)', author: 'Лев Толстой', snippet: 'Классическая повесть о дружбе, храбрости и силе человеческого духа.' },
-    { title: 'После бала', wiki: 'После бала (Толстой)', author: 'Лев Толстой', snippet: 'Знаменитый рассказ о любви, чести и жестокой изнанке эпохи.' }
-  ],
-  'чехов': [
-    { title: 'Палата № 6', wiki: 'Палата № 6 (Чехов)', author: 'Антон Чехов', snippet: 'Глубокая психологическая повесть о границе между безумием и разумом.' },
-    { title: 'Человек в футляре', wiki: 'Человек в футляре (Чехов)', author: 'Антон Чехов', snippet: 'Бессмертный рассказ об учителе Беликове, панически боявшемся реальной жизни.' }
-  ]
-};
+const BAN_WORDS = [
+  'устав', 'район', 'область', 'кислота', 'пациент', 'рмг', 'гост', 'закон',
+  'положение', 'федеральн', 'кодекс', 'рецептор', 'ингибирует', 'эсбе', 'бсэ',
+  'мэсбе', 'рrecord', 'категория', 'викитека', 'указатель', 'шаблон:', 'документ', 'постановление'
+];
 
-// ПОИСК
-async function searchBooks(query = 'Ницше') {
-  const cleanQuery = query.trim().toLowerCase();
-  if (!cleanQuery) return;
-
-  booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Отбираем оригинальные произведения...</div>';
-  let finalCards = [];
-
-  for (const authorKey in VERIFIED_AUTHORS) {
-    if (cleanQuery.includes(authorKey) || authorKey.includes(cleanQuery)) {
-      finalCards = VERIFIED_AUTHORS[authorKey].map(b => ({
-        rawTitle: b.wiki,
-        cleanTitle: b.title,
-        author: b.author,
-        snippet: b.snippet,
-        isVerified: true
-      }));
-      break;
-    }
-  }
+// ЗАГРУЗКА ОФИЦИАЛЬНЫХ КАТЕГОРИЙ ВИКИТЕКИ
+async function loadCategory(categoryTitle) {
+  booksGrid.innerHTML = `<div style="color:#8f7e70; margin-top:40px;">Загружаем книги из «${categoryTitle.replace('Категория:', '')}»...</div>`;
 
   try {
-    const url = `https://ru.wikisource.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.trim())}&srlimit=35&srnamespace=0&format=json&origin=*`;
+    const url = `https://ru.wikisource.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(categoryTitle)}&cmlimit=60&cmnamespace=0&format=json&origin=*`;
     const res = await fetch(url);
     const data = await res.json();
-    const results = data.query?.search || [];
+    const members = data.query?.categorymembers || [];
 
-    const banList = ['ЭСБЕ', 'БСЭ', 'МЭСБЕ', 'РБС', 'ВЭ', 'ЕЭБЕ', 'НЭС', 'ПБЭ', 'БЭЮ', 'Категория', 'Викитека', 'Указатель'];
+    const finalCards = [];
+    const catName = categoryTitle.replace('Категория:', '');
 
-    results.forEach(item => {
+    members.forEach(item => {
       const t = item.title;
-      if (banList.some(ban => t.startsWith(ban + '/') || t.includes(ban))) return;
-      if (t.includes('/От переводчика') || t.includes('/Предисловие') || t.includes('/Примечания') || t.endsWith('/ДО')) return;
-      if (t.includes('/Фридрих Ницше') || t.startsWith('Вырождение/')) return;
-      if (finalCards.some(c => c.cleanTitle.toLowerCase() === t.toLowerCase())) return;
+      const lower = t.toLowerCase();
 
-      let cleanTitle = t.replace(/\s*\(.*?\)/g, '');
+      const cleanSlash = t.replace('/ДО', '');
+      if (cleanSlash.includes('/')) return;
+      if (BAN_WORDS.some(w => lower.includes(w))) return;
+      if (t.startsWith('О ') || t.startsWith('Об ') || t.includes('рецензия')) return;
+
+      let cleanTitle = cleanSlash.replace(/\s*\(.*?\)/g, '').trim();
       let authorMatch = t.match(/\((.*?)\)/);
-      let authorHint = authorMatch ? authorMatch[1].split(';')[0].replace('/ДО', '') : 'Классика';
+      let authorHint = authorMatch ? authorMatch[1].split(';')[0].replace('/ДО', '').trim() : catName;
 
-      finalCards.push({
-        rawTitle: t,
-        cleanTitle: cleanTitle,
-        author: authorHint,
-        snippet: item.snippet.replace(/<[^>]*>?/gm, ''),
-        isVerified: false
-      });
+      if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
+        finalCards.push({
+          rawTitle: t,
+          cleanTitle: cleanTitle,
+          author: authorHint,
+          snippet: `Произведение из официального фонда «${catName}» библиотеки Викитека.`
+        });
+      }
     });
 
     renderBookCards(finalCards);
   } catch (err) {
-    if (finalCards.length > 0) renderBookCards(finalCards);
-    else booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения. Проверьте интернет!</div>';
+    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения к архивам. Проверьте интернет!</div>';
+  }
+}
+
+// УМНЫЙ ПОИСК АВТОРА
+async function searchBooks(query) {
+  const cleanQuery = query.trim().toLowerCase();
+  if (!cleanQuery) return;
+
+  filterButtons.forEach(b => b.classList.remove('active'));
+  booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Ищем произведения автора в архивах...</div>';
+
+  try {
+    let finalCards = [];
+
+    // 1. Проверяем страницу "Автор:Имя Фамилия"
+    const authorSearchUrl = `https://ru.wikisource.org/w/api.php?action=opensearch&search=${encodeURIComponent('Автор:' + cleanQuery)}&limit=5&format=json&origin=*`;
+    const authorRes = await fetch(authorSearchUrl);
+    const authorData = await authorRes.json();
+    const authorPages = (authorData[1] || []).filter(t => t.startsWith('Автор:'));
+
+    if (authorPages.length > 0) {
+      const authorPage = authorPages[0];
+      const authorCleanName = authorPage.replace('Автор:', '');
+
+      const linksUrl = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(authorPage)}&prop=links&format=json&origin=*`;
+      const linksRes = await fetch(linksUrl);
+      const linksData = await linksRes.json();
+      const allLinks = (linksData.parse?.links || [])
+        .filter(l => l.ns === 0)
+        .map(l => l['*']);
+
+      allLinks.forEach(t => {
+        const cleanSlash = t.replace('/ДО', '');
+        if (cleanSlash.includes('/')) return;
+        if (BAN_WORDS.some(w => t.toLowerCase().includes(w))) return;
+
+        let cleanTitle = cleanSlash.replace(/\s*\(.*?\)/g, '').trim();
+        if (cleanTitle.length < 2) return;
+
+        if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
+          finalCards.push({
+            rawTitle: t,
+            cleanTitle: cleanTitle,
+            author: authorCleanName,
+            snippet: `Официальное сочинение автора ${authorCleanName}.`
+          });
+        }
+      });
+    }
+
+    // 2. Если искали название книги
+    if (finalCards.length === 0) {
+      const searchUrl = `https://ru.wikisource.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.trim())}&srlimit=45&srnamespace=0&format=json&origin=*`;
+      const sRes = await fetch(searchUrl);
+      const sData = await sRes.json();
+      const results = sData.query?.search || [];
+
+      results.forEach(item => {
+        const t = item.title;
+        const lower = t.toLowerCase();
+
+        if (BAN_WORDS.some(w => lower.includes(w))) return;
+        const cleanSlash = t.replace('/ДО', '');
+        if (cleanSlash.includes('/')) return;
+
+        let cleanTitle = cleanSlash.replace(/\s*\(.*?\)/g, '').trim();
+        let authorMatch = t.match(/\((.*?)\)/);
+        let authorHint = authorMatch ? authorMatch[1].split(';')[0].replace('/ДО', '').trim() : 'Классика';
+
+        if (authorHint && !authorHint.toLowerCase().includes(cleanQuery) && cleanTitle.toLowerCase().includes(cleanQuery)) {
+          return;
+        }
+        if (lower.startsWith('о ') || lower.startsWith('об ') || lower.includes('рецензия')) return;
+
+        if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
+          finalCards.push({
+            rawTitle: t,
+            cleanTitle: cleanTitle,
+            author: authorHint,
+            snippet: item.snippet.replace(/<[^>]*>?/gm, '')
+          });
+        }
+      });
+    }
+
+    renderBookCards(finalCards);
+  } catch (err) {
+    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка поиска. Проверьте интернет!</div>';
   }
 }
 
 function renderBookCards(cards) {
   booksGrid.innerHTML = '';
   if (cards.length === 0) {
-    booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Ничего не найдено. Попробуйте другой запрос!</div>';
+    booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Книг не найдено. Попробуйте другой запрос!</div>';
     return;
   }
 
   cards.forEach(book => {
     const card = document.createElement('div');
     card.className = 'book-card';
-    if (book.isVerified) {
-      card.style.borderColor = '#c98a4b';
-      card.style.boxShadow = '0 15px 35px rgba(201, 138, 75, 0.15)';
-    }
 
     card.innerHTML = `
       <div>
-        <div class="card-author">${book.isVerified ? '★ ОРИГИНАЛ: ' + book.author : book.author}</div>
+        <div class="card-author">${book.author}</div>
         <div class="card-title">${book.cleanTitle}</div>
         <div class="card-snippet">${book.snippet}</div>
       </div>
-      <div class="card-footer">${book.isVerified ? 'Читать шедевр →' : 'Читать онлайн →'}</div>
+      <div class="card-footer">Читать онлайн →</div>
     `;
 
     card.addEventListener('click', () => loadAndOpenOnlineBook(book.rawTitle, book.cleanTitle, book.author));
@@ -126,37 +229,92 @@ function renderBookCards(cards) {
   });
 }
 
-// СКАЧИВАНИЕ И СКЛЕЙКА
+// КЛИКИ ПО КАТЕГОРИЯМ
+filterButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    searchInput.value = '';
+    const category = btn.getAttribute('data-category');
+    if (category) {
+      loadCategory(category);
+    }
+  });
+});
+
+btnSearch.addEventListener('click', () => searchBooks(searchInput.value));
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') searchBooks(searchInput.value);
+});
+
+// УМНОЕ СКАЧИВАНИЕ: САМО ПЕРЕХОДИТ СО СПИСКА ПЕРЕВОДОВ НА ПОЛНУЮ КНИГУ
 async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   loadingOverlay.style.display = 'flex';
   loadingStatus.textContent = `Скачиваем «${displayTitle}»...`;
 
   try {
-    const url = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(rawTitle)}&prop=text|links&format=json&origin=*`;
-    const res = await fetch(url);
-    const data = await res.json();
+    let targetPage = rawTitle;
+
+    // ШАГ 1: Скачиваем начальную страницу
+    let url = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`;
+    let res = await fetch(url);
+    let data = await res.json();
 
     if (!data.parse || !data.parse.text) throw new Error();
 
-    const tempDiv = document.createElement('div');
+    let tempDiv = document.createElement('div');
     tempDiv.innerHTML = data.parse.text['*'];
 
+    // ВЫЧИСЛЯЕМ: ЭТО СПИСОК ПЕРЕВОДОВ ИЛИ УЖЕ САМА КНИГА?
+    // Если страница содержит слова «Русские издания» или ссылки на конкретные издания (Ницше; Антоновский и др.):
+    if (tempDiv.innerText.includes('Русские издания') || tempDiv.innerText.length < 1200) {
+      const editionLink = (data.parse.links || []).find(l => 
+        l.ns === 0 && 
+        l['*'].startsWith(displayTitle) && 
+        l['*'].includes('(') && 
+        !l['*'].endsWith('/ДО')
+      );
+
+      // Если нашли ссылку на конкретный перевод — переключаемся на него!
+      if (editionLink) {
+        targetPage = editionLink['*'];
+        url = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`;
+        res = await fetch(url);
+        data = await res.json();
+        tempDiv.innerHTML = data.parse.text['*'];
+      }
+    }
+
+    // Чистим от служебных элементов
     tempDiv.querySelectorAll(`
       .mw-editsection, .navigation, .infobox, style, script, .reference, .noprint,
       .licenseContainer, .boilerplate, .headerContainer, .headertemplate, .ws-noexport,
-      .textinfo, .ws-summary, table, [id*="license"], [class*="license"], [id*="header"]
+      .textinfo, .ws-summary, table, .toc, .pagelist, [id*="license"], [class*="license"], [id*="header"]
     `).forEach(el => el.remove());
 
     let text = tempDiv.innerText.trim();
 
-    if (text.length < 2500 && data.parse.links) {
+    const ignoredSubpages = [
+      'содержание', 'оглавление', 'таблица соответствия', 'соответствие страниц',
+      'указатель', 'примечания', 'варианты', 'иллюстрации', 'список опечаток',
+      'до', 'источники', 'библиография'
+    ];
+
+    // ШАГ 2: Если книга разбита на подглавы (как у Заратустры) — качаем их все!
+    if (text.length < 4000 && data.parse.links) {
       const subchapters = data.parse.links
-        .filter(l => l['*'].startsWith(rawTitle + '/') && !l['*'].endsWith('/ДО'))
+        .filter(l => {
+          const title = l['*'];
+          if (!title.startsWith(targetPage + '/')) return false;
+          const lower = title.toLowerCase();
+          return !ignoredSubpages.some(sub => lower.includes('/' + sub) || lower.endsWith(sub));
+        })
         .map(l => l['*']);
 
       if (subchapters.length > 0) {
-        loadingStatus.textContent = `Качаем все главы книги...`;
-        const chaptersToDownload = subchapters.slice(0, 25);
+        loadingStatus.textContent = `Качаем все части и главы...`;
+        const chaptersToDownload = subchapters.slice(0, 30);
 
         const chapterPromises = chaptersToDownload.map(chTitle => 
           fetch(`https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(chTitle)}&prop=text&format=json&origin=*`)
@@ -168,7 +326,7 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
                 subDiv.querySelectorAll(`
                   .mw-editsection, .navigation, .infobox, style, script, .reference, .noprint,
                   .licenseContainer, .boilerplate, .headerContainer, .headertemplate, .ws-noexport,
-                  .textinfo, .ws-summary, table, [id*="license"], [class*="license"], [id*="header"]
+                  .textinfo, .ws-summary, table, .toc, .pagelist, [id*="license"], [class*="license"], [id*="header"]
                 `).forEach(el => el.remove());
                 return subDiv.innerText.trim();
               }
@@ -184,20 +342,27 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
       }
     }
 
+    // Чистка от пар цифр сканов
     const lines = text.split(/\r?\n/);
     const cleanLines = lines.filter(line => {
-      const l = line.toLowerCase();
+      const trimmed = line.trim();
+      if (!trimmed) return false;
+
+      if (/^\d+[\s\.\–\-\—\t]+\d+[а-яa-z]?$/i.test(trimmed)) return false;
+      if (/^\d{1,4}$/.test(trimmed)) return false;
+
+      const l = trimmed.toLowerCase();
       return !l.includes('общественное достояние') &&
              !l.includes('ст. 1281') &&
              !l.includes('авторского права') &&
+             !l.includes('таблица соответствия') &&
+             !l.includes('русские издания') &&
              !l.includes('az.lib.ru') &&
              !l.includes('источник:') &&
              !l.includes('опубл.:') &&
              !l.includes('перевод опубл') &&
              !l.includes('исключительного права') &&
-             !l.includes('срок охраны') &&
-             !l.includes('согласно ст.') &&
-             !l.includes('производным произведением');
+             !l.includes('согласно ст.');
     });
 
     text = cleanLines.join('\n').trim();
@@ -217,37 +382,60 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   }
 }
 
-// 1. ИСПРАВЛЕНИЕ: СНИЖАЕМ ПОРОГ СИМВОЛОВ (480 вместо 750), ЧТОБЫ ПУШКИН НЕ ВЫВАЛИВАЛСЯ
+// ПЛОТНЫЙ НЕПРЕРЫВНЫЙ РЕЗЧИК
 function autoSplitTextToPages(rawText) {
   const isMobile = window.innerWidth <= 768;
-  // На телефоне экран меньше, берем 400 символов, на ПК — 500 символов
-  const charsPerPage = isMobile ? 400 : 480; 
-  
-  const paragraphs = rawText.split(/\r?\n/);
+  const charsPerLine = isMobile ? 32 : 46;
+  const maxLinesPerPage = isMobile ? 18 : 22;
+
+  const paragraphs = rawText.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
   const pages = [];
-  let currentPage = '';
+  
+  let currentPageChunks = [];
+  let currentLines = 0;
 
   for (let p of paragraphs) {
-    p = p.trim();
-    if (!p) continue;
+    while (p.length > 0) {
+      let remainingLines = maxLinesPerPage - currentLines;
 
-    if ((currentPage + '\n\n' + p).length > charsPerPage) {
-      if (currentPage) {
-        pages.push(currentPage);
-        currentPage = '';
+      if (remainingLines <= 1) {
+        pages.push(currentPageChunks.join('\n\n'));
+        currentPageChunks = [];
+        currentLines = 0;
+        remainingLines = maxLinesPerPage;
       }
-      while (p.length > charsPerPage) {
-        let cut = p.lastIndexOf(' ', charsPerPage);
-        if (cut === -1) cut = charsPerPage;
-        pages.push(p.slice(0, cut));
+
+      let maxChars = remainingLines * charsPerLine;
+
+      if (p.length <= maxChars) {
+        currentPageChunks.push(p);
+        currentLines += Math.ceil(p.length / charsPerLine) + 1;
+        p = '';
+      } else {
+        let cut = p.lastIndexOf(' ', maxChars);
+        if (cut === -1 || cut < maxChars * 0.65) {
+          cut = maxChars;
+        }
+        
+        let chunk = p.slice(0, cut).trim();
+        if (chunk.length > 0) {
+          currentPageChunks.push(chunk);
+        }
+
+        pages.push(currentPageChunks.join('\n\n'));
+        currentPageChunks = [];
+        currentLines = 0;
+
         p = p.slice(cut).trim();
       }
     }
-    currentPage += (currentPage ? '\n\n' : '') + p;
 
     if (pages.length >= 350) break;
   }
-  if (currentPage && pages.length < 350) pages.push(currentPage);
+
+  if (currentPageChunks.length > 0 && pages.length < 350) {
+    pages.push(currentPageChunks.join('\n\n'));
+  }
 
   if (pages.length % 2 !== 0) {
     pages.push(' ');
@@ -256,14 +444,13 @@ function autoSplitTextToPages(rawText) {
   return pages;
 }
 
-// 2. ИСПРАВЛЕНИЕ: УМНЫЙ АДАПТИВНЫЙ РАЗМЕР КНИГИ ДЛЯ ТЕЛЕФОНА И ПК
+// ОТКРЫТИЕ 3D-КНИГИ
 function openBookReader(title, author, pages) {
   catalogView.style.display = 'none';
   readerView.style.display = 'flex';
 
   const isMobile = window.innerWidth <= 768;
 
-  // Динамические размеры под телефон или ПК
   const pageWidth = isMobile 
     ? Math.min(window.innerWidth - 20, 380) 
     : 480;
@@ -313,9 +500,7 @@ function openBookReader(title, author, pages) {
       showCover: true,
       flippingTime: isMobile ? 600 : 850,
       maxShadowOpacity: 0.3,
-      
-      // НА ТЕЛЕФОНЕ ВКЛЮЧАЕТ 1 СТРАНИЦУ, НА ПК — 2 СТРАНИЦЫ:
-      usePortrait: isMobile 
+      usePortrait: true 
     });
     currentFlipBook.loadFromHTML(document.querySelectorAll('.my-page'));
   }, 50);
@@ -331,62 +516,10 @@ backBtn.addEventListener('click', () => {
   catalogView.style.display = 'flex';
 });
 
-btnSearch.addEventListener('click', () => searchBooks(searchInput.value));
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') searchBooks(searchInput.value);
-});
-
-window.triggerSearch = function(name) {
-  searchInput.value = name;
-  searchBooks(name);
-};
-
 window.addEventListener('keydown', (e) => {
   if (!currentFlipBook) return;
   if (e.key === 'ArrowRight') currentFlipBook.flipNext();
   if (e.key === 'ArrowLeft') currentFlipBook.flipPrev();
 });
 
-// ТАБЛИЧКА И СВЕТ
-const overlay = document.getElementById('warm-overlay');
-const toggleBtn = document.getElementById('warm-toggle-btn');
-const modal = document.getElementById('modal-backdrop');
-const btnTurnOn = document.getElementById('btn-turn-on');
-const btnTurnOff = document.getElementById('btn-turn-off');
-
-function activateWarmMode() {
-  overlay.classList.add('active');
-  toggleBtn.textContent = '☀️ Обычный';
-}
-
-function deactivateWarmMode() {
-  overlay.classList.remove('active');
-  toggleBtn.textContent = '🕯️ Защита глаз';
-}
-
-function closeModal() {
-  if (modal) {
-    modal.style.opacity = '0';
-    setTimeout(() => modal.remove(), 500);
-  }
-}
-
-if (btnTurnOn) {
-  btnTurnOn.addEventListener('click', () => {
-    activateWarmMode();
-    closeModal();
-  });
-}
-
-if (btnTurnOff) {
-  btnTurnOff.addEventListener('click', () => {
-    closeModal();
-  });
-}
-
-toggleBtn.addEventListener('click', () => {
-  if (overlay.classList.contains('active')) deactivateWarmMode();
-  else activateWarmMode();
-});
-
-searchBooks('Ницше');
+loadCategory('Категория:Фантастика');
