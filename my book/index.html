@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paperly — Онлайн Читалка</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Защита глаз -->
+  <div id="warm-overlay"></div>
+  <button id="warm-toggle-btn">🕯️ Защита глаз</button>
+
+  <!-- ВОТ ОНА: ВСПЛЫВАЮЩАЯ ТАБЛИЧКА ПРИ ВХОДЕ -->
+  <div id="modal-backdrop">
+    <div class="modal-card">
+      <h3>Защита глаз 🕯️</h3>
+      <p>Включить мягкий тёплый свет? Он убирает синее излучение, чтобы глаза отдыхали и не уставали при чтении.</p>
+      <div class="modal-btns">
+        <button class="btn-warm" id="btn-turn-on">Включить</button>
+        <button class="btn-cancel" id="btn-turn-off">Не сейчас</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Индикатор загрузки -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-status" style="font-size: 18px; color: #f1dfc5; margin-bottom: 8px;">Скачиваем книгу...</div>
+    <div style="font-size: 13px; color: #8f7e70;">Очищаем от мусора и верстаем страницы</div>
+  </div>
+
+  <!-- 1. ЭКРАН КАТАЛОГА -->
+  <div id="catalog-view">
+    <h1 class="catalog-title">ОНЛАЙН БИБЛИОТЕКА</h1>
+    <div class="catalog-subtitle">Глубокий поиск по архивам мировой классики:</div>
+
+    <div class="search-box">
+      <input type="text" id="search-input" class="search-input" placeholder="Напиши имя автора или название книги...">
+      <button class="btn-search" id="btn-search">Найти</button>
+    </div>
+
+    <div class="tags-container">
+      <button class="tag-btn" onclick="triggerSearch('Ницше')">Ницше</button>
+      <button class="tag-btn" onclick="triggerSearch('Заратустра')">Так говорил Заратустра</button>
+      <button class="tag-btn" onclick="triggerSearch('Достоевский')">Достоевский</button>
+      <button class="tag-btn" onclick="triggerS
