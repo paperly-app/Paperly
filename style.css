@@ -27,13 +27,13 @@ body {
 
 #warm-toggle-btn {
   position: fixed;
-  top: 20px;
-  right: 25px;
+  top: 15px;
+  right: 15px;
   background: #251d18;
   border: 1px solid #4a382d;
   color: #d1b89d;
-  font-size: 14px;
-  padding: 8px 16px;
+  font-size: 13px;
+  padding: 7px 14px;
   border-radius: 20px;
   cursor: pointer;
   z-index: 500;
@@ -52,6 +52,8 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 2500;
+  padding: 20px;
+  box-sizing: border-box;
   transition: opacity 0.5s ease;
 }
 
@@ -59,30 +61,31 @@ body {
   background: #211914;
   border: 1px solid #4a3629;
   color: #f0e6d6;
-  padding: 30px 35px;
+  padding: 25px 25px;
   border-radius: 16px;
-  max-width: 400px;
+  max-width: 380px;
+  width: 100%;
   text-align: center;
   box-shadow: 0 20px 50px rgba(0,0,0,0.9);
 }
 
 .modal-card h3 {
   margin-top: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: normal;
   color: #e6b87d;
 }
 
 .modal-card p {
-  font-size: 15px;
+  font-size: 14px;
   color: #bfaea0;
   line-height: 1.5;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 
 .modal-btns {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
 }
 
@@ -90,39 +93,35 @@ body {
   background: #c98a4b;
   color: #1a120b;
   border: none;
-  padding: 10px 22px;
+  padding: 10px 18px;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
-  transition: background 0.2s;
 }
-.btn-warm:hover { background: #df9e5c; }
 
 .btn-cancel {
   background: transparent;
   border: 1px solid #4a3629;
   color: #9c8a7d;
-  padding: 10px 18px;
+  padding: 10px 15px;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
 }
-.btn-cancel:hover { background: #2d221c; }
 
 /* ---------------- 1. КАТАЛОГ ---------------- */
 #catalog-view {
   max-width: 1150px;
   margin: 0 auto;
-  padding: 50px 20px 80px;
+  padding: 40px 15px 80px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .catalog-title {
-  font-size: 36px;
+  font-size: 32px;
   font-weight: normal;
   letter-spacing: 2px;
   color: #e6b87d;
@@ -132,16 +131,16 @@ body {
 
 .catalog-subtitle {
   color: #8f7e70;
-  font-size: 15px;
-  margin-bottom: 30px;
+  font-size: 14px;
+  margin-bottom: 25px;
   text-align: center;
 }
 
 .search-box {
   width: 100%;
-  max-width: 700px;
+  max-width: 650px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 15px;
 }
 
@@ -151,10 +150,9 @@ body {
   border: 1px solid #4a382d;
   border-radius: 10px;
   color: #f1dfc5;
-  padding: 14px 20px;
-  font-size: 16px;
+  padding: 12px 16px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.2s;
 }
 .search-input:focus { border-color: #c98a4b; }
 
@@ -163,113 +161,61 @@ body {
   color: #1a120b;
   border: none;
   border-radius: 10px;
-  padding: 0 25px;
+  padding: 0 20px;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 15px;
   cursor: pointer;
-  transition: background 0.2s;
 }
-.btn-search:hover { background: #df9e5c; }
 
 .tags-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
-  margin-bottom: 45px;
+  margin-bottom: 35px;
 }
 
 .tag-btn {
   background: #241b16;
   border: 1px solid #3d2b20;
   color: #a89484;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 15px;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s;
 }
 .tag-btn:hover { background: #382920; color: #e6b87d; border-color: #c98a4b; }
 
 .books-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 25px;
+  gap: 20px;
   justify-content: center;
   width: 100%;
-  min-height: 250px;
 }
 
 .book-card {
-  width: 245px;
-  height: 330px;
+  width: 240px;
+  height: 320px;
   background: radial-gradient(circle at top, #2b1d16, #19120e);
   border: 2px solid #453225;
   border-radius: 8px;
-  padding: 25px 20px;
+  padding: 22px 18px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
   box-shadow: 0 12px 25px rgba(0,0,0,0.7);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.25s ease;
   position: relative;
 }
+.book-card:hover { transform: translateY(-5px); border-color: #c98a4b; }
 
-.book-card::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: rgba(0,0,0,0.4);
-}
-
-.book-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  border-color: #c98a4b;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.9);
-}
-
-.card-author {
-  font-size: 12px;
-  color: #c98a4b;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-}
-
-.card-title {
-  font-size: 18px;
-  color: #f1dfc5;
-  line-height: 1.35;
-  margin: 0 0 8px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-snippet {
-  font-size: 13px;
-  color: #8c7868;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.card-footer {
-  font-size: 13px;
-  color: #e6b87d;
-  border-top: 1px solid #36251a;
-  padding-top: 12px;
-  text-align: right;
-  font-weight: bold;
-}
+.card-author { font-size: 11px; color: #c98a4b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+.card-title { font-size: 17px; color: #f1dfc5; line-height: 1.3; margin: 0 0 6px 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card-snippet { font-size: 12px; color: #8c7868; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card-footer { font-size: 12px; color: #e6b87d; border-top: 1px solid #36251a; padding-top: 10px; text-align: right; font-weight: bold; }
 
 #loading-overlay {
   display: none;
@@ -282,16 +228,17 @@ body {
   justify-content: center;
   align-items: center;
   text-align: center;
+  padding: 20px;
 }
 
 .spinner {
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   border: 3px solid #3d2b20;
   border-top-color: #e6b87d;
   border-radius: 50%;
   animation: spin 1s infinite linear;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -306,34 +253,36 @@ body {
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  flex-direction: column;
 }
 
 #back-to-catalog-btn {
   position: fixed;
-  top: 20px;
-  left: 25px;
+  top: 15px;
+  left: 15px;
   background: #251d18;
   border: 1px solid #4a382d;
   color: #d1b89d;
-  font-size: 14px;
-  padding: 8px 16px;
+  font-size: 13px;
+  padding: 7px 14px;
   border-radius: 20px;
   cursor: pointer;
   z-index: 500;
   box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  transition: all 0.2s;
 }
-#back-to-catalog-btn:hover { background: #382c24; transform: scale(1.05); }
 
-#book { box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.95); }
+#book {
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.95);
+}
 
 .my-page {
   background: radial-gradient(circle at center, #f4ecd8 60%, #e9dcbe 100%);
-  padding: 45px;
+  padding: 35px 30px;
   box-sizing: border-box;
   border: 1px solid #d9ccb0;
   color: #2d241e;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .my-page[data-density="hard"] {
@@ -347,26 +296,43 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  box-sizing: border-box;
 }
 
 .page-content h1 {
-  font-size: 26px;
+  font-size: 24px;
   text-align: center;
   margin-top: 0;
   font-weight: normal;
   letter-spacing: 2px;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
 .page-content p {
-  line-height: 1.65;
-  font-size: 17px;
-  margin-top: 8px;
-  margin-bottom: 8px;
+  line-height: 1.55;
+  font-size: 16px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  word-break: break-word;
 }
 
 .page-number {
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   color: #8f8170;
+  padding-top: 5px;
+}
+
+/* =======================================================
+   СПЕЦИАЛЬНЫЕ НАСТРОЙКИ ДЛЯ ТЕЛЕФОНОВ (ЭКРАН < 768px)
+   ======================================================= */
+@media (max-width: 768px) {
+  .catalog-title { font-size: 26px; }
+  .my-page { padding: 22px 18px !important; }
+  .page-content h1 { font-size: 20px !important; }
+  .page-content p { font-size: 14.5px !important; line-height: 1.45 !important; margin: 5px 0 !important; }
+  .page-number { font-size: 11px !important; }
+  #back-to-catalog-btn, #warm-toggle-btn { font-size: 11px; padding: 6px 11px; top: 10px; }
+  #back-to-catalog-btn { left: 10px; }
+  #warm-toggle-btn { right: 10px; }
 }

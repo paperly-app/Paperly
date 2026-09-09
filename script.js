@@ -20,6 +20,11 @@ const VERIFIED_AUTHORS = {
     { title: 'Человеческое, слишком человеческое', wiki: 'Человеческое, слишком человеческое (Ницше)', author: 'Фридрих Ницше', snippet: 'Книга для свободных умов. Сборник глубоких афоризмов о человеческой природе.' },
     { title: 'Антихрист', wiki: 'Антихрист (Ницше)', author: 'Фридрих Ницше', snippet: 'Знаменитый философский манифест с критикой религии и упадка культуры.' }
   ],
+  'пушкин': [
+    { title: 'Пиковая дама', wiki: 'Пиковая дама (Пушкин)', author: 'А. С. Пушкин', snippet: 'Мистическая повесть о тайне трех карт, графине и безумии Германна.' },
+    { title: 'Метель', wiki: 'Метель (повесть)', author: 'А. С. Пушкин', snippet: 'Знаменитая повесть из цикла «Повести Белкина» о судьбоносной игре случая.' },
+    { title: 'Капитанская дочка', wiki: 'Капитанская дочка (Пушкин)', author: 'А. С. Пушкин', snippet: 'Исторический роман о пугачевском бунте, чести и верной любви.' }
+  ],
   'достоевский': [
     { title: 'Преступление и наказание', wiki: 'Преступление и наказание (Достоевский)', author: 'Фёдор Достоевский', snippet: 'Петербург, Раскольников и теория о «тварях дрожащих» и «право имеющих».' },
     { title: 'Белые ночи', wiki: 'Белые ночи (Достоевский)', author: 'Фёдор Достоевский', snippet: 'Сентиментальный роман из воспоминаний мечтателя под петербургским небом.' },
@@ -121,6 +126,7 @@ function renderBookCards(cards) {
   });
 }
 
+// СКАЧИВАНИЕ И СКЛЕЙКА
 async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   loadingOverlay.style.display = 'flex';
   loadingStatus.textContent = `Скачиваем «${displayTitle}»...`;
@@ -149,7 +155,7 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
         .map(l => l['*']);
 
       if (subchapters.length > 0) {
-        loadingStatus.textContent = `Качаем все главы романа...`;
+        loadingStatus.textContent = `Качаем все главы книги...`;
         const chaptersToDownload = subchapters.slice(0, 25);
 
         const chapterPromises = chaptersToDownload.map(chTitle => 
@@ -211,8 +217,12 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   }
 }
 
+// 1. ИСПРАВЛЕНИЕ: СНИЖАЕМ ПОРОГ СИМВОЛОВ (480 вместо 750), ЧТОБЫ ПУШКИН НЕ ВЫВАЛИВАЛСЯ
 function autoSplitTextToPages(rawText) {
-  const charsPerPage = 750;
+  const isMobile = window.innerWidth <= 768;
+  // На телефоне экран меньше, берем 400 символов, на ПК — 500 символов
+  const charsPerPage = isMobile ? 400 : 480; 
+  
   const paragraphs = rawText.split(/\r?\n/);
   const pages = [];
   let currentPage = '';
@@ -239,13 +249,27 @@ function autoSplitTextToPages(rawText) {
   }
   if (currentPage && pages.length < 350) pages.push(currentPage);
 
-  if (pages.length % 2 !== 0) pages.push(' ');
+  if (pages.length % 2 !== 0) {
+    pages.push(' ');
+  }
+
   return pages;
 }
 
+// 2. ИСПРАВЛЕНИЕ: УМНЫЙ АДАПТИВНЫЙ РАЗМЕР КНИГИ ДЛЯ ТЕЛЕФОНА И ПК
 function openBookReader(title, author, pages) {
   catalogView.style.display = 'none';
   readerView.style.display = 'flex';
+
+  const isMobile = window.innerWidth <= 768;
+
+  // Динамические размеры под телефон или ПК
+  const pageWidth = isMobile 
+    ? Math.min(window.innerWidth - 20, 380) 
+    : 480;
+  const pageHeight = isMobile 
+    ? Math.min(window.innerHeight - 80, 580) 
+    : 680;
 
   const totalPages = pages.length;
 
@@ -253,7 +277,7 @@ function openBookReader(title, author, pages) {
     <div class="my-page" data-density="hard">
       <div class="page-content" style="justify-content: center; text-align: center;">
         <h1>${title.toUpperCase()}</h1>
-        <p style="color: #cbb396; margin-top: 25px; font-size: 16px;">${author}</p>
+        <p style="color: #cbb396; margin-top: 20px; font-size: 15px;">${author}</p>
       </div>
     </div>
   `;
@@ -284,12 +308,14 @@ function openBookReader(title, author, pages) {
 
   setTimeout(() => {
     currentFlipBook = new St.PageFlip(document.getElementById('book'), {
-      width: 520,
-      height: 700,
+      width: pageWidth,
+      height: pageHeight,
       showCover: true,
-      flippingTime: 850,
+      flippingTime: isMobile ? 600 : 850,
       maxShadowOpacity: 0.3,
-      usePortrait: false
+      
+      // НА ТЕЛЕФОНЕ ВКЛЮЧАЕТ 1 СТРАНИЦУ, НА ПК — 2 СТРАНИЦЫ:
+      usePortrait: isMobile 
     });
     currentFlipBook.loadFromHTML(document.querySelectorAll('.my-page'));
   }, 50);
@@ -321,7 +347,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') currentFlipBook.flipPrev();
 });
 
-// ЛОГИКА ЗАЩИТЫ ГЛАЗ И ТАБЛИЧКИ
+// ТАБЛИЧКА И СВЕТ
 const overlay = document.getElementById('warm-overlay');
 const toggleBtn = document.getElementById('warm-toggle-btn');
 const modal = document.getElementById('modal-backdrop');
@@ -330,7 +356,7 @@ const btnTurnOff = document.getElementById('btn-turn-off');
 
 function activateWarmMode() {
   overlay.classList.add('active');
-  toggleBtn.textContent = '☀️ Обычный свет';
+  toggleBtn.textContent = '☀️ Обычный';
 }
 
 function deactivateWarmMode() {
