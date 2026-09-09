@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Paperly</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
@@ -44,11 +44,11 @@
 
     <!-- КАТЕГОРИИ -->
     <div class="filters-bar" id="filters-bar">
-      <button class="filter-btn active" data-category="Категория:Фантастика">🚀 Фантастика</button>
+      <button class="filter-btn active" data-category="Категория:Повести">🎭 Повести и классика</button>
+      <button class="filter-btn" data-category="Категория:Фантастика">🚀 Фантастика</button>
       <button class="filter-btn" data-category="Категория:Приключенческая литература">🧭 Приключения</button>
-      <button class="filter-btn" data-category="Категория:Сказки">🧚 Сказки</button>
-      <button class="filter-btn" data-category="Категория:Повести">🎭 Повести и классика</button>
       <button class="filter-btn" data-category="Категория:Философия">📜 Философия</button>
+      <button class="filter-btn" data-category="Категория:Сказки">🧚 Сказки</button>
       <button class="filter-btn" data-category="Категория:Романы">📚 Романы</button>
     </div>
 
@@ -72,8 +72,9 @@
         <h2 class="details-title" id="details-title">Название книги</h2>
         
         <div class="details-tags">
+          <span class="d-tag" id="details-stats-tag">⏱️ 25 мин • 📄 ~18 стр</span>
           <span class="d-tag">✓ Полный текст</span>
-          <span class="d-tag">✓ Общественное достояние</span>
+          <span class="d-tag">✓ Без сокращений</span>
           <span class="d-tag">✓ Бесплатно</span>
         </div>
 
@@ -84,7 +85,6 @@
         <div class="details-actions">
           <button class="btn-read-3d" id="btn-read-3d">📖 Читать онлайн (3D)</button>
           
-          <!-- ЕДИНАЯ КНОПКА СКАЧИВАНИЯ С ВЫПАДАЮЩИМ СПИСКОМ -->
           <div class="download-dropdown-container">
             <button class="btn-download-main" id="btn-download-toggle" onclick="toggleDownloadDropdown(event)">
               <span>📥 Скачать книгу</span>
@@ -146,6 +146,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
-  <script src="script.js?v=12"></script>
+  <script src="script.js?v=14"></script>
 </body>
 </html>

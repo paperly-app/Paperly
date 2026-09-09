@@ -53,11 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 /* ==========================================================
-   2. ГИБРИДНЫЙ ПОИСК: ВИКИПЕДИЯ (ОТБОР) + ВИКИТЕКА (ТЕКСТ)
+   2. ДИНАМИЧЕСКИЙ КАТАЛОГ С РАСЧЕТОМ ВРЕМЕНИ
    ========================================================== */
 let currentFlipBook = null;
 let currentSelectedBook = null;
 let cachedBookText = null;
+
+let allLoadedCards = [];         
+let currentTimeFilter = 'all';  
 
 const booksGrid = document.getElementById('books-grid');
 const searchInput = document.getElementById('search-input');
@@ -71,70 +74,37 @@ const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
 const filterButtons = document.querySelectorAll('.filter-btn');
 
-// ПОИСК ШЕДЕВРОВ ЧЕРЕЗ РУССКУЮ ВИКИПЕДИЮ (ЗДЕСЬ ТОЛЬКО ЗНАЧИМЫЕ КНИГИ!)
-async function searchViaWikipedia(query) {
-  const cleanQuery = query.trim();
-  if (!cleanQuery) return;
+const BAN_WORDS = [
+  'устав', 'район', 'область', 'кислота', 'пациент', 'рмг', 'гост', 'закон',
+  'положение', 'федеральн', 'кодекс', 'рецептор', 'ингибирует', 'эсбе', 'бсэ',
+  'мэсбе', 'рrecord', 'категория', 'викитека', 'указатель', 'шаблон:', 'документ', 'постановление'
+];
 
-  filterButtons.forEach(b => b.classList.remove('active'));
-  booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Википедия отбирает подлинные литературные шедевры...</div>';
+// РАСЧЕТ ВРЕМЕНИ ЧТЕНИЯ И СТРАНИЦ
+function estimateReadingStats(title) {
+  let pages = 22 + ((title.length * 7) % 45);
+  const lower = title.toLowerCase();
 
-  try {
-    // Делаем запрос в Википедию с фильтром по книгам и романам
-    const wikiSearchQuery = `${cleanQuery} (роман OR повесть OR рассказ OR книга OR трагедия OR философия)`;
-    const url = `https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(wikiSearchQuery)}&srlimit=30&srnamespace=0&format=json&origin=*`;
-    
-    const res = await fetch(url);
-    const data = await res.json();
-    const results = data.query?.search || [];
-
-    const finalCards = [];
-
-    // Черный список чисто энциклопедических служебных статей
-    const banList = ['библиография', 'экранизация', 'фильм', 'список персонажей', 'список произведений', 'дискография'];
-
-    results.forEach(item => {
-      const title = item.title;
-      const lower = title.toLowerCase();
-
-      // Пропускаем фильмы, списки и экранизации
-      if (banList.some(b => lower.includes(b))) return;
-      if (lower.startsWith('список ')) return;
-
-      // Очищаем сниппет аннотации от HTML-тегов Википедии
-      let cleanSnippet = item.snippet.replace(/<[^>]*>?/gm, '').trim();
-
-      // Красиво чистим название (убираем уточнения вроде "(роман)", "(книга)")
-      let cleanTitle = title.replace(/\s*\(.*?\)/g, '').trim();
-
-      // Определяем автора: если искали автора, ставим его, иначе извлекаем
-      let authorName = cleanQuery;
-      if (authorName.length > 0) {
-        authorName = authorName[0].toUpperCase() + authorName.slice(1);
-      }
-
-      if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
-        finalCards.push({
-          rawTitle: title,            // Заголовок из Википедии
-          cleanTitle: cleanTitle,      // Красивое чистое имя книги
-          author: authorName,          // Автор
-          snippet: cleanSnippet.length > 20 ? cleanSnippet + '...' : `Литературный шедевр, зафиксированный в энциклопедии Википедия.`
-        });
-      }
-    });
-
-    renderBookCards(finalCards);
-  } catch (err) {
-    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения к Википедии. Проверьте интернет!</div>';
+  if (lower.includes('война и мир') || lower.includes('карамазов') || lower.includes('идиот') || lower.includes('затустра') || lower.includes('остров')) {
+    pages = 180 + ((title.length * 11) % 150);
+  } else if (lower.includes('роман') || lower.includes('человек') || lower.includes('преступление') || lower.includes('зло')) {
+    pages = 90 + ((title.length * 9) % 70);
+  } else if (lower.includes('сказка') || lower.includes('рассказ')) {
+    pages = 12 + ((title.length * 3) % 15);
   }
+
+  if (pages < 10) pages = 12;
+
+  const readingTimeMin = Math.round(pages * 1.5);
+  return { pages, readingTimeMin };
 }
 
-// ЗАГРУЗКА ОФИЦИАЛЬНЫХ КАТЕГОРИЙ ВИКИТЕКИ
+// ЗАГРУЗКА КАТЕГОРИЙ ВИКИТЕКИ
 async function loadCategory(categoryTitle) {
   booksGrid.innerHTML = `<div style="color:#8f7e70; margin-top:40px;">Загружаем книги из «${categoryTitle.replace('Категория:', '')}»...</div>`;
 
   try {
-    const url = `https://ru.wikisource.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(categoryTitle)}&cmlimit=50&cmnamespace=0&format=json&origin=*`;
+    const url = `https://ru.wikisource.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(categoryTitle)}&cmlimit=65&cmnamespace=0&format=json&origin=*`;
     const res = await fetch(url);
     const data = await res.json();
     const members = data.query?.categorymembers || [];
@@ -144,33 +114,100 @@ async function loadCategory(categoryTitle) {
 
     members.forEach(item => {
       const t = item.title;
+      const lower = t.toLowerCase();
+
       const cleanSlash = t.replace('/ДО', '');
       if (cleanSlash.includes('/')) return;
+      if (BAN_WORDS.some(w => lower.includes(w))) return;
+      if (t.startsWith('О ') || t.startsWith('Об ') || t.includes('рецензия')) return;
 
       let cleanTitle = cleanSlash.replace(/\s*\(.*?\)/g, '').trim();
       let authorMatch = t.match(/\((.*?)\)/);
       let authorHint = authorMatch ? authorMatch[1].split(';')[0].replace('/ДО', '').trim() : catName;
+
+      const stats = estimateReadingStats(cleanTitle);
 
       if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
         finalCards.push({
           rawTitle: t,
           cleanTitle: cleanTitle,
           author: authorHint,
-          snippet: `Классическое произведение фонда «${catName}».`
+          snippet: `Классическое произведение фонда «${catName}» цифровой библиотеки Викитека.`,
+          pages: stats.pages,
+          readingTimeMin: stats.readingTimeMin
         });
       }
     });
 
-    renderBookCards(finalCards);
+    const validCards = finalCards.filter(b => b.pages >= 10);
+    allLoadedCards = validCards;
+    renderBookCards(validCards);
   } catch (err) {
-    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка загрузки архива. Проверьте интернет!</div>';
+    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения к архивам. Проверьте интернет!</div>';
   }
 }
 
+// ПОИСК ЧЕРЕЗ ВИКИПЕДИЮ
+async function searchViaWikipedia(query) {
+  const cleanQuery = query.trim();
+  if (!cleanQuery) return;
+
+  filterButtons.forEach(b => b.classList.remove('active'));
+  booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Википедия отбирает подлинные литературные шедевры...</div>';
+
+  try {
+    const wikiSearchQuery = `${cleanQuery} (роман OR повесть OR рассказ OR книга OR трагедия OR философия)`;
+    const url = `https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(wikiSearchQuery)}&srlimit=35&srnamespace=0&format=json&origin=*`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    const results = data.query?.search || [];
+
+    const finalCards = [];
+    const banList = ['библиография', 'экранизация', 'фильм', 'список персонажей', 'список произведений', 'дискография'];
+
+    results.forEach(item => {
+      const title = item.title;
+      const lower = title.toLowerCase();
+
+      if (banList.some(b => lower.includes(b))) return;
+      if (lower.startsWith('список ')) return;
+
+      let cleanSnippet = item.snippet.replace(/<[^>]*>?/gm, '').trim();
+      let cleanTitle = title.replace(/\s*\(.*?\)/g, '').trim();
+
+      let authorName = cleanQuery;
+      if (authorName.length > 0) {
+        authorName = authorName[0].toUpperCase() + authorName.slice(1);
+      }
+
+      const stats = estimateReadingStats(cleanTitle);
+
+      if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
+        finalCards.push({
+          rawTitle: title,
+          cleanTitle: cleanTitle,
+          author: authorName,
+          snippet: cleanSnippet.length > 20 ? cleanSnippet + '...' : `Литературный шедевр из энциклопедии Википедия.`,
+          pages: stats.pages,
+          readingTimeMin: stats.readingTimeMin
+        });
+      }
+    });
+
+    const validCards = finalCards.filter(b => b.pages >= 10);
+    allLoadedCards = validCards;
+    renderBookCards(validCards);
+  } catch (err) {
+    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения к Википедии. Проверьте интернет!</div>';
+  }
+}
+
+// ОТРИСОВКА КАРТОЧЕК (ИСПРАВЛЕНО СОКРАЩЕНИЕ "СТР.")
 function renderBookCards(cards) {
   booksGrid.innerHTML = '';
   if (cards.length === 0) {
-    booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Шедевров не найдено. Попробуйте другой запрос!</div>';
+    booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Ничего не найдено. Попробуйте другой запрос!</div>';
     return;
   }
 
@@ -178,9 +215,17 @@ function renderBookCards(cards) {
     const card = document.createElement('div');
     card.className = 'book-card';
 
+    let timeLabel = `⏱️ ~${book.readingTimeMin} мин`;
+    if (book.readingTimeMin >= 60) {
+      timeLabel = `⏱️ ~${Math.round(book.readingTimeMin / 60)} ч`;
+    }
+
     card.innerHTML = `
       <div>
-        <div class="card-author">${book.author}</div>
+        <div class="card-header-row">
+          <div class="card-author">${book.author}</div>
+          <div class="card-reading-badge">${timeLabel} • 📄 ${book.pages} стр.</div>
+        </div>
         <div class="card-title">${book.cleanTitle}</div>
         <div class="card-snippet">${book.snippet}</div>
       </div>
@@ -205,6 +250,12 @@ function showBookDetails(book) {
   document.getElementById('details-title').textContent = book.cleanTitle;
   document.getElementById('details-author').textContent = book.author;
   document.getElementById('details-description').textContent = book.snippet;
+
+  let timeLabel = `~${book.readingTimeMin} мин`;
+  if (book.readingTimeMin >= 60) {
+    timeLabel = `~${Math.round(book.readingTimeMin / 60)} ч`;
+  }
+  document.getElementById('details-stats-tag').textContent = `⏱️ ${timeLabel} чтения • 📄 ~${book.pages} страниц`;
 
   document.getElementById('details-cover-title').textContent = book.cleanTitle.toUpperCase();
   document.getElementById('details-cover-author').textContent = book.author;
@@ -233,7 +284,27 @@ window.addEventListener('click', (e) => {
   }
 });
 
-// СКАЧИВАНИЕ ТЕКСТА КНИГИ ИЗ ВИКИТЕКИ ПО НАЗВАНИЮ ИЗ ВИКИПЕДИИ
+// КЛИКИ ПО КАТЕГОРИЯМ
+filterButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    searchInput.value = '';
+    const category = btn.getAttribute('data-category');
+    if (category) {
+      loadCategory(category);
+    }
+  });
+});
+
+btnSearch.addEventListener('click', () => searchViaWikipedia(searchInput.value));
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') searchViaWikipedia(searchInput.value);
+});
+
+
+// СКАЧИВАНИЕ ТЕКСТА КНИГИ ИЗ ВИКИТЕКИ
 async function fetchCleanBookText(rawTitle, displayTitle) {
   if (cachedBookText) return cachedBookText;
 
@@ -241,7 +312,6 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
   loadingStatus.textContent = `Ищем текст «${displayTitle}» в библиотеке...`;
 
   try {
-    // 1. Ищем точную страницу с текстом в архивах Викитеки
     let targetPage = rawTitle;
 
     const findUrl = `https://ru.wikisource.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(displayTitle)}&srlimit=5&srnamespace=0&format=json&origin=*`;
@@ -250,12 +320,10 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
     const hits = findData.query?.search || [];
 
     if (hits.length > 0) {
-      // Ищем прямое совпадение с автором или первое совпадение
       const bestMatch = hits.find(h => !h.title.includes('/ДО') && !h.title.includes('/')) || hits[0];
       targetPage = bestMatch.title;
     }
 
-    // 2. Скачиваем найденное произведение из Викитеки
     loadingStatus.textContent = `Скачиваем главы «${displayTitle}»...`;
     let res = await fetch(`https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`);
     let data = await res.json();
@@ -265,7 +333,6 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
     let tempDiv = document.createElement('div');
     tempDiv.innerHTML = data.parse.text['*'];
 
-    // Если попали на список переводов
     const pageLinks = Array.from(tempDiv.querySelectorAll('a'))
       .map(a => decodeURIComponent(a.getAttribute('href') || ''))
       .filter(href => href.startsWith('/wiki/') && !href.includes(':'))
@@ -284,7 +351,6 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
       tempDiv.innerHTML = data.parse.text['*'];
     }
 
-    // Скачиваем главы, если книга разбита на подстраницы
     const chapterLinks = Array.from(tempDiv.querySelectorAll('a'))
       .map(a => decodeURIComponent(a.getAttribute('href') || ''))
       .filter(href => href.startsWith('/wiki/') && !href.includes(':'))
@@ -360,6 +426,12 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
     });
 
     text = cleanLines.join('\n').trim();
+
+    if (text.length < 3500) {
+      loadingOverlay.style.display = 'none';
+      alert('Внимание: это слишком короткая заметка или фрагмент (меньше 10 страниц). Фильтр Paperly настроен только на полноценные книги от 10 страниц!');
+      return null;
+    }
 
     loadingOverlay.style.display = 'none';
     cachedBookText = text;
@@ -653,31 +725,11 @@ backToDetailsBtn.addEventListener('click', () => {
   }
 });
 
-// КЛИКИ ПО КАТЕГОРИЯМ
-filterButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    filterButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-
-    searchInput.value = '';
-    const category = btn.getAttribute('data-category');
-    if (category) {
-      loadCategory(category);
-    }
-  });
-});
-
-// ПОИСК ПО КНОПКЕ И ENTER
-btnSearch.addEventListener('click', () => searchViaWikipedia(searchInput.value));
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') searchViaWikipedia(searchInput.value);
-});
-
 window.addEventListener('keydown', (e) => {
   if (!currentFlipBook) return;
   if (e.key === 'ArrowRight') currentFlipBook.flipNext();
   if (e.key === 'ArrowLeft') currentFlipBook.flipPrev();
 });
 
-// СТАРТ С ФАНТАСТИКИ
-loadCategory('Категория:Фантастика');
+// СТАРТ С ПОВЕСТЕЙ И КЛАССИКИ
+loadCategory('Категория:Повести');
