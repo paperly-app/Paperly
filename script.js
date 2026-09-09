@@ -38,7 +38,7 @@ document.getElementById('warm-toggle-btn')?.addEventListener('click', () => {
 });
 
 /* ==========================================================
-   2. КОНФИГУРАЦИЯ ЖАНРОВ (100+ КНИГ НА КАТЕГОРИЮ)
+   2. КОНФИГУРАЦИЯ ЖАНРОВ И ГИБРИДНОГО ПОИСКА
    ========================================================== */
 let currentFlipBook = null;
 let currentSelectedBook = null;
@@ -66,7 +66,7 @@ const GENRE_CONFIG = {
   'philosophy': {
     rule: b => {
       const s = (b.author + ' ' + (b.title || b.cleanTitle)).toLowerCase();
-      return ['ницше', 'шопенгауэр', 'кант', 'платон', 'аристотель', 'марк аврелий', 'сенека', 'философ', 'этика', 'трактат', 'заратустра'].some(k => s.includes(k));
+      return ['ницше', 'шопенгауэр', 'кант', 'платон', 'аристотель', 'марк аврелий', 'сенека', 'философ', 'этика', 'трактат'].some(k => s.includes(k));
     },
     category: 'Категория:Философия'
   },
@@ -87,7 +87,7 @@ const GENRE_CONFIG = {
   'horror': {
     rule: b => {
       const s = (b.author + ' ' + (b.title || b.cleanTitle)).toLowerCase();
-      return ['лавкрафт', 'по', 'гогол', 'вампир', 'вурдалак', 'упырь', 'ужас', 'мистик', 'черт', 'ведьм', 'ашер', 'дагон', 'стокер'].some(k => s.includes(k));
+      return ['лавкрафт', 'по', 'гогол', 'вампир', 'вурдалак', 'упырь', 'ужас', 'мистик', 'черт', 'ведьм', 'ашер', 'дагон'].some(k => s.includes(k));
     },
     query: 'intitle:"(Лавкрафт" OR intitle:"(Гоголь" OR intitle:"(По" OR "Вампир"'
   },
@@ -107,7 +107,7 @@ const GENRE_CONFIG = {
   }
 };
 
-// ЗАГРУЗКА БАЗЫ
+// ЗАГРУЗКА БАЗЫ ПРИ СТАРТЕ
 async function initLibrary() {
   try {
     const res = await fetch('database.json?v=' + Date.now());
@@ -128,11 +128,9 @@ async function initLibrary() {
 async function loadGenreWithGuaranteed100(genreKey) {
   const config = GENRE_CONFIG[genreKey] || GENRE_CONFIG['all'];
   
-  // 1. Берем книги из локальной базы
   const localCards = libraryDB.filter(config.rule).map(b => ({ ...b, isLocal: true }));
   renderBookCards(localCards);
 
-  // 2. Докачиваем из онлайн-фонда Викитеки до 100+ книг
   try {
     let onlineItems = [];
 
@@ -175,7 +173,6 @@ async function loadGenreWithGuaranteed100(genreKey) {
       });
     });
 
-    // Объединяем локальные + онлайн (100+ книг гарантировано!)
     renderBookCards([...localCards, ...onlineCards]);
   } catch (err) {}
 }
@@ -237,7 +234,7 @@ async function performUnifiedSearch(query) {
   } catch (err) {}
 }
 
-// ОТРИСОВКА КАРТОЧЕК
+// ОТРИСОВКА КАРТОЧЕК В КАТАЛОГЕ
 function renderBookCards(books) {
   booksGrid.innerHTML = '';
   if (books.length === 0) {
@@ -334,7 +331,6 @@ window.closeDetailsView = function() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-// КЛИКИ ПО КАТЕГОРИЯМ
 filterButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     filterButtons.forEach(b => b.classList.remove('active'));
@@ -457,7 +453,7 @@ async function streamBookTextOnDemand(displayTitle, authorHint, isBackground = f
   }
 }
 
-// 4. ЗАГРУЗКА СВОИХ КНИГ ПОЛЬЗОВАТЕЛЕМ (DRAG & DROP)
+// 4. ЗАГРУЗКА СВОИХ КНИГ (DRAG & DROP)
 window.handleUserFile = function(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -506,7 +502,7 @@ window.addEventListener('drop', (e) => {
   }
 });
 
-// 5. ВЫПАДАЮЩИЙ СПИСОК И СКАЧИВАНИЕ ФАЙЛОВ
+// 5. СКАЧИВАНИЕ ФАЙЛОВ
 window.toggleDownloadDropdown = function(e) {
   e.stopPropagation();
   document.getElementById('download-dropdown').classList.toggle('show');
