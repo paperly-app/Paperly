@@ -5,15 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Paperly</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
-  
-  <!-- ЯДЕРНЫЙ СБРОС КЭША -->
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=22">
 </head>
 <body>
 
   <!-- Защита глаз -->
   <div id="warm-overlay"></div>
   <button id="warm-toggle-btn">🕯️ Защита глаз</button>
+
+  <!-- Скрытое поле для загрузки своего файла -->
+  <input type="file" id="user-file-input" accept=".txt,.fb2" style="display: none;" onchange="handleUserFile(event)">
+
+  <!-- Drag & Drop экран -->
+  <div id="drag-drop-overlay">
+    <div class="drag-drop-card">
+      <div style="font-size: 50px; margin-bottom: 10px;">📖</div>
+      <h2>Отпустите файл здесь</h2>
+      <p>Paperly моментально откроет вашу книгу в 3D!</p>
+    </div>
+  </div>
 
   <!-- Всплывающая табличка при входе -->
   <div id="modal-backdrop" onclick="handleBackdropClick(event)">
@@ -27,31 +37,42 @@
     </div>
   </div>
 
-  <!-- Индикатор загрузки (ТЕПЕРЬ ЖЕЛЕЗНО СКРЫТ ПРИ СТАРТЕ) -->
+  <!-- Индикатор загрузки онлайн книг -->
   <div id="loading-overlay" style="display: none;">
     <div class="spinner"></div>
     <div id="loading-status" style="font-size: 18px; color: #f1dfc5; margin-bottom: 8px;">Скачиваем книгу...</div>
-    <div style="font-size: 13px; color: #8f7e70;">Нарезаем страницы в 3D разворот</div>
+    <div style="font-size: 13px; color: #8f7e70;">Форматируем и готовим разворот</div>
   </div>
 
   <!-- 1. ЭКРАН КАТАЛОГА -->
   <div id="catalog-view">
     <h1 class="catalog-title">ОНЛАЙН БИБЛИОТЕКА</h1>
-    <div class="catalog-subtitle">Шедевры мировой классики в живом 3D-переплете:</div>
-
-    <div class="search-box">
-      <input type="text" id="search-input" class="search-input" placeholder="Поиск автора или книги (Шерлок, Достоевский, Ницше)...">
-      <button class="btn-search" id="btn-search">Найти</button>
+    <div class="catalog-subtitle">
+      Шедевры мировой классики в живом 3D-переплете:
+      <br>
+      <div class="db-stats" id="db-stats-badge">📚 Загрузка базы...</div>
     </div>
 
-    <!-- КАТЕГОРИИ -->
+    <!-- ПОИСК И КНОПКА ЗАГРУЗКИ СВОЕЙ КНИГИ -->
+    <div class="search-box-row">
+      <div class="search-box">
+        <input type="text" id="search-input" class="search-input" placeholder="Поиск в коллекции и по всей мировой литературе...">
+        <button class="btn-search" id="btn-search">Найти</button>
+      </div>
+      <button class="btn-upload-own" onclick="document.getElementById('user-file-input').click()" title="Загрузить свой файл .txt или .fb2">
+        📁 Своя книга
+      </button>
+    </div>
+
+    <!-- ФИЛЬТРЫ ПО ЖАНРАМ -->
     <div class="filters-bar" id="filters-bar">
-      <button class="filter-btn active" data-category="Категория:Повести">🎭 Повести и классика</button>
-      <button class="filter-btn" data-category="Категория:Фантастика">🚀 Фантастика</button>
-      <button class="filter-btn" data-category="Категория:Приключенческая литература">🧭 Приключения</button>
-      <button class="filter-btn" data-category="Категория:Философия">📜 Философия</button>
-      <button class="filter-btn" data-category="Категория:Сказки">🧚 Сказки</button>
-      <button class="filter-btn" data-category="Категория:Романы">📚 Романы</button>
+      <button class="filter-btn active" data-genre="all">Все книги</button>
+      <button class="filter-btn" data-genre="philosophy">📜 Философия</button>
+      <button class="filter-btn" data-genre="classics">🎭 Русская классика</button>
+      <button class="filter-btn" data-genre="detective">🕵️ Детективы</button>
+      <button class="filter-btn" data-genre="horror">🕯️ Мистика и ужасы</button>
+      <button class="filter-btn" data-genre="adventures">🧭 Приключения</button>
+      <button class="filter-btn" data-genre="scifi">🚀 Фантастика</button>
     </div>
 
     <div class="books-grid" id="books-grid"></div>
@@ -74,9 +95,9 @@
         <h2 class="details-title" id="details-title">Название книги</h2>
         
         <div class="details-tags">
+          <span class="d-tag" id="details-source-tag">💾 В коллекции</span>
           <span class="d-tag" id="details-stats-tag">⏱️ 25 мин • 📄 ~18 стр</span>
           <span class="d-tag">✓ Полный текст</span>
-          <span class="d-tag">✓ Без сокращений</span>
           <span class="d-tag">✓ Бесплатно</span>
         </div>
 
@@ -148,7 +169,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
-  <!-- ЯДЕРНЫЙ СБРОС КЭША -->
-  <script src="script.js?v=16"></script>
+  <script src="script.js?v=22"></script>
 </body>
 </html>
