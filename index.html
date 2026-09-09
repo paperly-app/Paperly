@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Онлайн Библиотека Классики</title>
+  
+  <!-- Подключаем наш файл стилей style.css -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Защита глаз -->
+  <div id="warm-overlay"></div>
+  <button id="warm-toggle-btn">🕯️ Защита глаз</button>
+
+  <!-- Индикатор загрузки -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-status" style="font-size: 18px; color: #f1dfc5; margin-bottom: 8px;">Скачиваем книгу...</div>
+    <div style="font-size: 13px; color: #8f7e70;">Очищаем от мусора и верстаем страницы</div>
+  </div>
+
+  <!-- 1. ЭКРАН КАТАЛОГА -->
+  <div id="catalog-view">
+    <h1 class="catalog-title">ОНЛАЙН БИБЛИОТЕКА</h1>
+    <div class="catalog-subtitle">Глубокий поиск по архивам мировой классики:</div>
+
+    <div class="search-box">
+      <input type="text" id="search-input" class="search-input" placeholder="Напиши имя автора или название книги...">
+      <button class="btn-search" id="btn-search">Найти</button>
+    </div>
+
+    <div class="tags-container">
+      <button class="tag-btn" onclick="triggerSearch('Ницше')">Ницше</button>
+      <button class="tag-btn" onclick="triggerSearch('Заратустра')">Так говорил Заратустра</button>
+      <button class="tag-btn" onclick="triggerSearch('Достоевский')">Достоевский</button>
+      <button class="tag-btn" onclick="triggerSearch('Толстой')">Лев Толстой</button>
+      <button class="tag-btn" onclick="triggerSearch('Чехов')">Чехов</button>
+      <button class="tag-btn" onclick="triggerSearch('Пушкин')">Пушкин</button>
+    </div>
+
+    <div class="books-grid" id="books-grid"></div>
+  </div>
+
+  <!-- 2. ЭКРАН ЧИТАЛКИ -->
+  <div id="reader-view">
+    <button id="back-to-catalog-btn">← В каталог</button>
+    <div id="book-wrapper"></div>
+  </div>
+
+  <!-- Движок книги из сети -->
+  <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
+  
+  <!-- Подключаем наш файл скрипта script.js -->
+  <script src="script.js"></script>
+</body>
+</html>
