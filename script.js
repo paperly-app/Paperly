@@ -10,7 +10,7 @@ const backBtn = document.getElementById('back-to-catalog-btn');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
 
-// ЗОЛОТОЙ ФОНД
+// ЗОЛОТОЙ ФОНД ОРИГИНАЛОВ
 const VERIFIED_AUTHORS = {
   'ницше': [
     { title: 'Так говорил Заратустра', wiki: 'Так говорил Заратустра (Ницше; Антоновский)', author: 'Фридрих Ницше', snippet: 'Главная книга Ницше. Философская поэма о Сверхчеловеке, воле к власти и вечном возвращении.' },
@@ -92,7 +92,6 @@ async function searchBooks(query = 'Ницше') {
   }
 }
 
-// ОТРИСОВКА КАРТОЧЕК
 function renderBookCards(cards) {
   booksGrid.innerHTML = '';
   if (cards.length === 0) {
@@ -122,7 +121,6 @@ function renderBookCards(cards) {
   });
 }
 
-// СКАЧИВАНИЕ И СКЛЕЙКА
 async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   loadingOverlay.style.display = 'flex';
   loadingStatus.textContent = `Скачиваем «${displayTitle}»...`;
@@ -213,7 +211,6 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   }
 }
 
-// НАРЕЗКА НА СТРАНИЦЫ
 function autoSplitTextToPages(rawText) {
   const charsPerPage = 750;
   const paragraphs = rawText.split(/\r?\n/);
@@ -246,7 +243,6 @@ function autoSplitTextToPages(rawText) {
   return pages;
 }
 
-// ОТКРЫТИЕ 3D-КНИГИ
 function openBookReader(title, author, pages) {
   catalogView.style.display = 'none';
   readerView.style.display = 'flex';
@@ -299,7 +295,6 @@ function openBookReader(title, author, pages) {
   }, 50);
 }
 
-// ВОЗВРАТ
 backBtn.addEventListener('click', () => {
   if (currentFlipBook) {
     currentFlipBook.destroy();
@@ -310,7 +305,6 @@ backBtn.addEventListener('click', () => {
   catalogView.style.display = 'flex';
 });
 
-// ПОИСК
 btnSearch.addEventListener('click', () => searchBooks(searchInput.value));
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') searchBooks(searchInput.value);
@@ -327,7 +321,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') currentFlipBook.flipPrev();
 });
 
-// ЛОГИКА ЗАЩИТЫ ГЛАЗ И ВСПЛЫВАЮЩЕЙ ТАБЛИЧКИ
+// ЛОГИКА ЗАЩИТЫ ГЛАЗ И ТАБЛИЧКИ
 const overlay = document.getElementById('warm-overlay');
 const toggleBtn = document.getElementById('warm-toggle-btn');
 const modal = document.getElementById('modal-backdrop');

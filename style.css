@@ -9,7 +9,7 @@ body {
   color: #e6ded5;
 }
 
-/* ЗАЩИТА ГЛАЗ */
+/* ФИЛЬТР ЗАЩИТЫ ГЛАЗ */
 #warm-overlay {
   position: fixed;
   top: 0;
@@ -42,6 +42,75 @@ body {
 }
 #warm-toggle-btn:hover { background: #382c24; transform: scale(1.05); }
 
+/* ВСПЛЫВАЮЩАЯ ТАБЛИЧКА ЗАЩИТЫ ГЛАЗ */
+#modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2500;
+  transition: opacity 0.5s ease;
+}
+
+.modal-card {
+  background: #211914;
+  border: 1px solid #4a3629;
+  color: #f0e6d6;
+  padding: 30px 35px;
+  border-radius: 16px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+}
+
+.modal-card h3 {
+  margin-top: 0;
+  font-size: 22px;
+  font-weight: normal;
+  color: #e6b87d;
+}
+
+.modal-card p {
+  font-size: 15px;
+  color: #bfaea0;
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.modal-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-warm {
+  background: #c98a4b;
+  color: #1a120b;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-warm:hover { background: #df9e5c; }
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid #4a3629;
+  color: #9c8a7d;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-cancel:hover { background: #2d221c; }
+
 /* ---------------- 1. КАТАЛОГ ---------------- */
 #catalog-view {
   max-width: 1150px;
@@ -68,7 +137,6 @@ body {
   text-align: center;
 }
 
-/* ПОИСК */
 .search-box {
   width: 100%;
   max-width: 700px;
@@ -103,7 +171,6 @@ body {
 }
 .btn-search:hover { background: #df9e5c; }
 
-/* ТЕГИ */
 .tags-container {
   display: flex;
   flex-wrap: wrap;
@@ -122,13 +189,8 @@ body {
   cursor: pointer;
   transition: all 0.2s;
 }
-.tag-btn:hover {
-  background: #382920;
-  color: #e6b87d;
-  border-color: #c98a4b;
-}
+.tag-btn:hover { background: #382920; color: #e6b87d; border-color: #c98a4b; }
 
-/* СЕТКА КАРТОЧЕК */
 .books-grid {
   display: flex;
   flex-wrap: wrap;
@@ -209,7 +271,6 @@ body {
   font-weight: bold;
 }
 
-/* ИНДИКАТОР ЗАГРУЗКИ */
 #loading-overlay {
   display: none;
   position: fixed;
