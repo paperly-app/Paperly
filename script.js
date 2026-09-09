@@ -53,17 +53,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 /* ==========================================================
-   2. ДИНАМИЧЕСКИЙ КАТАЛОГ: АВТОРЫ И КАТЕГОРИИ
+   2. ДИНАМИЧЕСКИЙ КАТАЛОГ И СТРАНИЦА КНИГИ
    ========================================================== */
 let currentFlipBook = null;
+let currentSelectedBook = null;
+let cachedBookText = null;
 
 const booksGrid = document.getElementById('books-grid');
 const searchInput = document.getElementById('search-input');
 const btnSearch = document.getElementById('btn-search');
 const catalogView = document.getElementById('catalog-view');
+const detailsView = document.getElementById('details-view');
 const readerView = document.getElementById('reader-view');
 const bookWrapper = document.getElementById('book-wrapper');
-const backBtn = document.getElementById('back-to-catalog-btn');
+const backToDetailsBtn = document.getElementById('back-to-details-btn');
 const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
 const filterButtons = document.querySelectorAll('.filter-btn');
@@ -74,7 +77,6 @@ const BAN_WORDS = [
   'мэсбе', 'рrecord', 'категория', 'викитека', 'указатель', 'шаблон:', 'документ', 'постановление'
 ];
 
-// ЗАГРУЗКА ОФИЦИАЛЬНЫХ КАТЕГОРИЙ ВИКИТЕКИ
 async function loadCategory(categoryTitle) {
   booksGrid.innerHTML = `<div style="color:#8f7e70; margin-top:40px;">Загружаем книги из «${categoryTitle.replace('Категория:', '')}»...</div>`;
 
@@ -105,7 +107,7 @@ async function loadCategory(categoryTitle) {
           rawTitle: t,
           cleanTitle: cleanTitle,
           author: authorHint,
-          snippet: `Произведение из официального фонда «${catName}» библиотеки Викитека.`
+          snippet: `Классическое произведение из официального фонда «${catName}» цифровой библиотеки Викитека.`
         });
       }
     });
@@ -116,7 +118,6 @@ async function loadCategory(categoryTitle) {
   }
 }
 
-// УМНЫЙ ПОИСК АВТОРА
 async function searchBooks(query) {
   const cleanQuery = query.trim().toLowerCase();
   if (!cleanQuery) return;
@@ -127,7 +128,6 @@ async function searchBooks(query) {
   try {
     let finalCards = [];
 
-    // 1. Проверяем страницу "Автор:Имя Фамилия"
     const authorSearchUrl = `https://ru.wikisource.org/w/api.php?action=opensearch&search=${encodeURIComponent('Автор:' + cleanQuery)}&limit=5&format=json&origin=*`;
     const authorRes = await fetch(authorSearchUrl);
     const authorData = await authorRes.json();
@@ -157,13 +157,12 @@ async function searchBooks(query) {
             rawTitle: t,
             cleanTitle: cleanTitle,
             author: authorCleanName,
-            snippet: `Официальное сочинение автора ${authorCleanName}.`
+            snippet: `Официальное сочинение автора ${authorCleanName} из фонда Викитеки.`
           });
         }
       });
     }
 
-    // 2. Если искали название книги
     if (finalCards.length === 0) {
       const searchUrl = `https://ru.wikisource.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.trim())}&srlimit=45&srnamespace=0&format=json&origin=*`;
       const sRes = await fetch(searchUrl);
@@ -221,42 +220,66 @@ function renderBookCards(cards) {
         <div class="card-title">${book.cleanTitle}</div>
         <div class="card-snippet">${book.snippet}</div>
       </div>
-      <div class="card-footer">Читать онлайн →</div>
+      <div class="card-footer">Подробнее →</div>
     `;
 
-    card.addEventListener('click', () => loadAndOpenOnlineBook(book.rawTitle, book.cleanTitle, book.author));
+    card.addEventListener('click', () => showBookDetails(book));
     booksGrid.appendChild(card);
   });
 }
 
-// КЛИКИ ПО КАТЕГОРИЯМ
-filterButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    filterButtons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+// СТРАНИЦА ОПИСАНИЯ КНИГИ
+function showBookDetails(book) {
+  currentSelectedBook = book;
+  cachedBookText = null;
 
-    searchInput.value = '';
-    const category = btn.getAttribute('data-category');
-    if (category) {
-      loadCategory(category);
-    }
-  });
+  catalogView.style.display = 'none';
+  readerView.style.display = 'none';
+  detailsView.style.display = 'flex';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  document.getElementById('details-title').textContent = book.cleanTitle;
+  document.getElementById('details-author').textContent = book.author;
+  document.getElementById('details-description').textContent = book.snippet || 'Классическое литературное произведение в общественном достоянии.';
+
+  document.getElementById('details-cover-title').textContent = book.cleanTitle.toUpperCase();
+  document.getElementById('details-cover-author').textContent = book.author;
+}
+
+window.closeDetailsView = function() {
+  detailsView.style.display = 'none';
+  catalogView.style.display = 'flex';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// ВЫПАДАЮЩИЙ СПИСОК СКАЧИВАНИЯ
+window.toggleDownloadDropdown = function(e) {
+  e.stopPropagation();
+  const dropdown = document.getElementById('download-dropdown');
+  dropdown.classList.toggle('show');
+};
+
+function closeDownloadDropdown() {
+  const dropdown = document.getElementById('download-dropdown');
+  if (dropdown) dropdown.classList.remove('show');
+}
+
+window.addEventListener('click', (e) => {
+  if (!e.target.closest('.download-dropdown-container')) {
+    closeDownloadDropdown();
+  }
 });
 
-btnSearch.addEventListener('click', () => searchBooks(searchInput.value));
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') searchBooks(searchInput.value);
-});
+// СКАЧИВАНИЕ ТЕКСТА КНИГИ
+async function fetchCleanBookText(rawTitle, displayTitle) {
+  if (cachedBookText) return cachedBookText;
 
-// УМНОЕ СКАЧИВАНИЕ: САМО ПЕРЕХОДИТ СО СПИСКА ПЕРЕВОДОВ НА ПОЛНУЮ КНИГУ
-async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
   loadingOverlay.style.display = 'flex';
-  loadingStatus.textContent = `Скачиваем «${displayTitle}»...`;
+  loadingStatus.textContent = `Загружаем текст «${displayTitle}»...`;
 
   try {
     let targetPage = rawTitle;
 
-    // ШАГ 1: Скачиваем начальную страницу
     let url = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`;
     let res = await fetch(url);
     let data = await res.json();
@@ -266,8 +289,6 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
     let tempDiv = document.createElement('div');
     tempDiv.innerHTML = data.parse.text['*'];
 
-    // ВЫЧИСЛЯЕМ: ЭТО СПИСОК ПЕРЕВОДОВ ИЛИ УЖЕ САМА КНИГА?
-    // Если страница содержит слова «Русские издания» или ссылки на конкретные издания (Ницше; Антоновский и др.):
     if (tempDiv.innerText.includes('Русские издания') || tempDiv.innerText.length < 1200) {
       const editionLink = (data.parse.links || []).find(l => 
         l.ns === 0 && 
@@ -276,7 +297,6 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
         !l['*'].endsWith('/ДО')
       );
 
-      // Если нашли ссылку на конкретный перевод — переключаемся на него!
       if (editionLink) {
         targetPage = editionLink['*'];
         url = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`;
@@ -286,7 +306,6 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
       }
     }
 
-    // Чистим от служебных элементов
     tempDiv.querySelectorAll(`
       .mw-editsection, .navigation, .infobox, style, script, .reference, .noprint,
       .licenseContainer, .boilerplate, .headerContainer, .headertemplate, .ws-noexport,
@@ -301,7 +320,6 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
       'до', 'источники', 'библиография'
     ];
 
-    // ШАГ 2: Если книга разбита на подглавы (как у Заратустры) — качаем их все!
     if (text.length < 4000 && data.parse.links) {
       const subchapters = data.parse.links
         .filter(l => {
@@ -314,7 +332,7 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
 
       if (subchapters.length > 0) {
         loadingStatus.textContent = `Качаем все части и главы...`;
-        const chaptersToDownload = subchapters.slice(0, 30);
+        const chaptersToDownload = subchapters.slice(0, 25);
 
         const chapterPromises = chaptersToDownload.map(chTitle => 
           fetch(`https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(chTitle)}&prop=text&format=json&origin=*`)
@@ -342,7 +360,6 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
       }
     }
 
-    // Чистка от пар цифр сканов
     const lines = text.split(/\r?\n/);
     const cleanLines = lines.filter(line => {
       const trimmed = line.trim();
@@ -367,22 +384,183 @@ async function loadAndOpenOnlineBook(rawTitle, displayTitle, authorHint) {
 
     text = cleanLines.join('\n').trim();
 
-    if (text.length < 100) {
-      alert('Не удалось извлечь текст книги. Попробуйте другую!');
-      loadingOverlay.style.display = 'none';
-      return;
-    }
-
-    const pages = autoSplitTextToPages(text);
     loadingOverlay.style.display = 'none';
-    openBookReader(displayTitle, authorHint, pages);
+    cachedBookText = text;
+    return text;
   } catch (e) {
     loadingOverlay.style.display = 'none';
-    alert('Ошибка при загрузке. Попробуйте соседнее издание!');
+    alert('Ошибка при загрузке текста произведения.');
+    return null;
   }
 }
 
-// ПЛОТНЫЙ НЕПРЕРЫВНЫЙ РЕЗЧИК
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function escapeXml(unsafe) {
+  return unsafe.replace(/[<>&'"]/g, c => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+    }
+  });
+}
+
+// ОБРАБОТКА ВЫБРАННОГО ФОРМАТА СКАЧИВАНИЯ
+window.handleFormatClick = async function(format) {
+  closeDownloadDropdown();
+  if (!currentSelectedBook) return;
+
+  const text = await fetchCleanBookText(currentSelectedBook.rawTitle, currentSelectedBook.cleanTitle);
+  if (!text) return;
+
+  const title = currentSelectedBook.cleanTitle;
+  const author = currentSelectedBook.author;
+
+  // 1. ФОРМАТ FB2 (ДЛЯ РИДЕРОВ)
+  if (format === 'fb2') {
+    const paragraphsXml = text.split(/\r?\n/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+      .map(p => `<p>${escapeXml(p)}</p>`)
+      .join('\n');
+
+    const fb2Xml = `<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description>
+    <title-info>
+      <genre>prose_classic</genre>
+      <author><last-name>${escapeXml(author)}</last-name></author>
+      <book-title>${escapeXml(title)}</book-title>
+      <lang>ru</lang>
+    </title-info>
+  </description>
+  <body>
+    <title><p>${escapeXml(title)}</p></title>
+    <section>
+      ${paragraphsXml}
+    </section>
+  </body>
+</FictionBook>`;
+
+    const blob = new Blob([fb2Xml], { type: 'application/x-fictionbook+xml;charset=utf-8' });
+    triggerDownload(blob, `${title}.fb2`);
+  }
+
+  // 2. ФОРМАТ TXT (ОБЫЧНЫЙ ТЕКСТ)
+  else if (format === 'txt') {
+    const content = `${title.toUpperCase()}\nАвтор: ${author}\n\n${text}`;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    triggerDownload(blob, `${title}.txt`);
+  }
+
+  // 3. ФОРМАТ HTML (ОФФЛАЙН ВЕБ-КНИГА)
+  else if (format === 'html') {
+    const paragraphsHtml = text.split(/\r?\n/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+      .map(p => `<p>${escapeXml(p)}</p>`)
+      .join('\n');
+
+    const htmlDoc = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeXml(title)} — ${escapeXml(author)}</title>
+  <style>
+    body { font-family: 'Georgia', serif; max-width: 720px; margin: 40px auto; padding: 25px; line-height: 1.7; background: #faf6ee; color: #2d241e; }
+    h1 { text-align: center; font-weight: normal; margin-bottom: 5px; }
+    .author { text-align: center; color: #887; margin-bottom: 40px; font-style: italic; }
+    p { margin: 1em 0; text-indent: 1.5em; }
+  </style>
+</head>
+<body>
+  <h1>${escapeXml(title)}</h1>
+  <div class="author">${escapeXml(author)}</div>
+  ${paragraphsHtml}
+</body>
+</html>`;
+    const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
+    triggerDownload(blob, `${title}.html`);
+  }
+
+  // 4. ФОРМАТ DOC (ДЛЯ MICROSOFT WORD)
+  else if (format === 'doc') {
+    const paragraphsHtml = text.split(/\r?\n/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+      .map(p => `<p style="text-indent:25pt; margin:6pt 0;">${escapeXml(p)}</p>`)
+      .join('\n');
+
+    const docContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>${escapeXml(title)}</title></head>
+<body style="font-family:Times New Roman; font-size:12pt;">
+  <h1 style="text-align:center; font-size:18pt;">${escapeXml(title)}</h1>
+  <p style="text-align:center; font-style:italic; font-size:13pt; color:#555;">${escapeXml(author)}</p>
+  <hr style="margin:20pt 0;">
+  ${paragraphsHtml}
+</body>
+</html>`;
+    const blob = new Blob([docContent], { type: 'application/msword;charset=utf-8' });
+    triggerDownload(blob, `${title}.doc`);
+  }
+
+  // 5. ФОРМАТ EPUB (ДЛЯ СМАРТФОНОВ И РИДЕРОВ)
+  else if (format === 'epub') {
+    // Генерируем компактный EPUB (на базе совместимого XHTML контейнера)
+    const paragraphsHtml = text.split(/\r?\n/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+      .map(p => `<p>${escapeXml(p)}</p>`)
+      .join('\n');
+
+    const epubContent = `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>${escapeXml(title)}</title>
+  <style type="text/css">
+    body { font-family: sans-serif; padding: 5%; line-height: 1.5; }
+    h1 { text-align: center; }
+    .author { text-align: center; color: #555; margin-bottom: 2em; }
+    p { text-indent: 1em; margin: 0.5em 0; }
+  </style>
+</head>
+<body>
+  <h1>${escapeXml(title)}</h1>
+  <div class="author">${escapeXml(author)}</div>
+  ${paragraphsHtml}
+</body>
+</html>`;
+    const blob = new Blob([epubContent], { type: 'application/epub+zip;charset=utf-8' });
+    triggerDownload(blob, `${title}.epub`);
+  }
+};
+
+// 3. КНОПКА «ЧИТАТЬ ОНЛАЙН (3D)»
+document.getElementById('btn-read-3d').addEventListener('click', async () => {
+  if (!currentSelectedBook) return;
+  const text = await fetchCleanBookText(currentSelectedBook.rawTitle, currentSelectedBook.cleanTitle);
+  if (!text) return;
+
+  const pages = autoSplitTextToPages(text);
+  openBookReader(currentSelectedBook.cleanTitle, currentSelectedBook.author, pages);
+});
+
+// ==========================================================
+// 4. 3D-ЧИТАЛКА
+// ==========================================================
 function autoSplitTextToPages(rawText) {
   const isMobile = window.innerWidth <= 768;
   const charsPerLine = isMobile ? 32 : 46;
@@ -390,7 +568,6 @@ function autoSplitTextToPages(rawText) {
 
   const paragraphs = rawText.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
   const pages = [];
-  
   let currentPageChunks = [];
   let currentLines = 0;
 
@@ -413,14 +590,10 @@ function autoSplitTextToPages(rawText) {
         p = '';
       } else {
         let cut = p.lastIndexOf(' ', maxChars);
-        if (cut === -1 || cut < maxChars * 0.65) {
-          cut = maxChars;
-        }
+        if (cut === -1 || cut < maxChars * 0.65) cut = maxChars;
         
         let chunk = p.slice(0, cut).trim();
-        if (chunk.length > 0) {
-          currentPageChunks.push(chunk);
-        }
+        if (chunk.length > 0) currentPageChunks.push(chunk);
 
         pages.push(currentPageChunks.join('\n\n'));
         currentPageChunks = [];
@@ -444,20 +617,14 @@ function autoSplitTextToPages(rawText) {
   return pages;
 }
 
-// ОТКРЫТИЕ 3D-КНИГИ
 function openBookReader(title, author, pages) {
+  detailsView.style.display = 'none';
   catalogView.style.display = 'none';
   readerView.style.display = 'flex';
 
   const isMobile = window.innerWidth <= 768;
-
-  const pageWidth = isMobile 
-    ? Math.min(window.innerWidth - 20, 380) 
-    : 480;
-  const pageHeight = isMobile 
-    ? Math.min(window.innerHeight - 80, 580) 
-    : 680;
-
+  const pageWidth = isMobile ? Math.min(window.innerWidth - 20, 380) : 480;
+  const pageHeight = isMobile ? Math.min(window.innerHeight - 80, 580) : 680;
   const totalPages = pages.length;
 
   let pagesHtml = `
@@ -506,14 +673,36 @@ function openBookReader(title, author, pages) {
   }, 50);
 }
 
-backBtn.addEventListener('click', () => {
+backToDetailsBtn.addEventListener('click', () => {
   if (currentFlipBook) {
     currentFlipBook.destroy();
     currentFlipBook = null;
   }
   bookWrapper.innerHTML = '';
   readerView.style.display = 'none';
-  catalogView.style.display = 'flex';
+  if (currentSelectedBook) {
+    detailsView.style.display = 'flex';
+  } else {
+    catalogView.style.display = 'flex';
+  }
+});
+
+filterButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    searchInput.value = '';
+    const category = btn.getAttribute('data-category');
+    if (category) {
+      loadCategory(category);
+    }
+  });
+});
+
+btnSearch.addEventListener('click', () => searchBooks(searchInput.value));
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') searchBooks(searchInput.value);
 });
 
 window.addEventListener('keydown', (e) => {
