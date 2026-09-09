@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 /* ==========================================================
-   2. ДИНАМИЧЕСКИЙ КАТАЛОГ И СТРАНИЦА КНИГИ
+   2. ГИБРИДНЫЙ ПОИСК: ВИКИПЕДИЯ (ОТБОР) + ВИКИТЕКА (ТЕКСТ)
    ========================================================== */
 let currentFlipBook = null;
 let currentSelectedBook = null;
@@ -71,17 +71,70 @@ const loadingOverlay = document.getElementById('loading-overlay');
 const loadingStatus = document.getElementById('loading-status');
 const filterButtons = document.querySelectorAll('.filter-btn');
 
-const BAN_WORDS = [
-  'устав', 'район', 'область', 'кислота', 'пациент', 'рмг', 'гост', 'закон',
-  'положение', 'федеральн', 'кодекс', 'рецептор', 'ингибирует', 'эсбе', 'бсэ',
-  'мэсбе', 'рrecord', 'категория', 'викитека', 'указатель', 'шаблон:', 'документ', 'постановление'
-];
+// ПОИСК ШЕДЕВРОВ ЧЕРЕЗ РУССКУЮ ВИКИПЕДИЮ (ЗДЕСЬ ТОЛЬКО ЗНАЧИМЫЕ КНИГИ!)
+async function searchViaWikipedia(query) {
+  const cleanQuery = query.trim();
+  if (!cleanQuery) return;
 
+  filterButtons.forEach(b => b.classList.remove('active'));
+  booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Википедия отбирает подлинные литературные шедевры...</div>';
+
+  try {
+    // Делаем запрос в Википедию с фильтром по книгам и романам
+    const wikiSearchQuery = `${cleanQuery} (роман OR повесть OR рассказ OR книга OR трагедия OR философия)`;
+    const url = `https://ru.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(wikiSearchQuery)}&srlimit=30&srnamespace=0&format=json&origin=*`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    const results = data.query?.search || [];
+
+    const finalCards = [];
+
+    // Черный список чисто энциклопедических служебных статей
+    const banList = ['библиография', 'экранизация', 'фильм', 'список персонажей', 'список произведений', 'дискография'];
+
+    results.forEach(item => {
+      const title = item.title;
+      const lower = title.toLowerCase();
+
+      // Пропускаем фильмы, списки и экранизации
+      if (banList.some(b => lower.includes(b))) return;
+      if (lower.startsWith('список ')) return;
+
+      // Очищаем сниппет аннотации от HTML-тегов Википедии
+      let cleanSnippet = item.snippet.replace(/<[^>]*>?/gm, '').trim();
+
+      // Красиво чистим название (убираем уточнения вроде "(роман)", "(книга)")
+      let cleanTitle = title.replace(/\s*\(.*?\)/g, '').trim();
+
+      // Определяем автора: если искали автора, ставим его, иначе извлекаем
+      let authorName = cleanQuery;
+      if (authorName.length > 0) {
+        authorName = authorName[0].toUpperCase() + authorName.slice(1);
+      }
+
+      if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
+        finalCards.push({
+          rawTitle: title,            // Заголовок из Википедии
+          cleanTitle: cleanTitle,      // Красивое чистое имя книги
+          author: authorName,          // Автор
+          snippet: cleanSnippet.length > 20 ? cleanSnippet + '...' : `Литературный шедевр, зафиксированный в энциклопедии Википедия.`
+        });
+      }
+    });
+
+    renderBookCards(finalCards);
+  } catch (err) {
+    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения к Википедии. Проверьте интернет!</div>';
+  }
+}
+
+// ЗАГРУЗКА ОФИЦИАЛЬНЫХ КАТЕГОРИЙ ВИКИТЕКИ
 async function loadCategory(categoryTitle) {
   booksGrid.innerHTML = `<div style="color:#8f7e70; margin-top:40px;">Загружаем книги из «${categoryTitle.replace('Категория:', '')}»...</div>`;
 
   try {
-    const url = `https://ru.wikisource.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(categoryTitle)}&cmlimit=60&cmnamespace=0&format=json&origin=*`;
+    const url = `https://ru.wikisource.org/w/api.php?action=query&list=categorymembers&cmtitle=${encodeURIComponent(categoryTitle)}&cmlimit=50&cmnamespace=0&format=json&origin=*`;
     const res = await fetch(url);
     const data = await res.json();
     const members = data.query?.categorymembers || [];
@@ -91,12 +144,8 @@ async function loadCategory(categoryTitle) {
 
     members.forEach(item => {
       const t = item.title;
-      const lower = t.toLowerCase();
-
       const cleanSlash = t.replace('/ДО', '');
       if (cleanSlash.includes('/')) return;
-      if (BAN_WORDS.some(w => lower.includes(w))) return;
-      if (t.startsWith('О ') || t.startsWith('Об ') || t.includes('рецензия')) return;
 
       let cleanTitle = cleanSlash.replace(/\s*\(.*?\)/g, '').trim();
       let authorMatch = t.match(/\((.*?)\)/);
@@ -107,106 +156,21 @@ async function loadCategory(categoryTitle) {
           rawTitle: t,
           cleanTitle: cleanTitle,
           author: authorHint,
-          snippet: `Классическое произведение из официального фонда «${catName}» цифровой библиотеки Викитека.`
+          snippet: `Классическое произведение фонда «${catName}».`
         });
       }
     });
 
     renderBookCards(finalCards);
   } catch (err) {
-    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка подключения к архивам. Проверьте интернет!</div>';
-  }
-}
-
-async function searchBooks(query) {
-  const cleanQuery = query.trim().toLowerCase();
-  if (!cleanQuery) return;
-
-  filterButtons.forEach(b => b.classList.remove('active'));
-  booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Ищем произведения автора в архивах...</div>';
-
-  try {
-    let finalCards = [];
-
-    const authorSearchUrl = `https://ru.wikisource.org/w/api.php?action=opensearch&search=${encodeURIComponent('Автор:' + cleanQuery)}&limit=5&format=json&origin=*`;
-    const authorRes = await fetch(authorSearchUrl);
-    const authorData = await authorRes.json();
-    const authorPages = (authorData[1] || []).filter(t => t.startsWith('Автор:'));
-
-    if (authorPages.length > 0) {
-      const authorPage = authorPages[0];
-      const authorCleanName = authorPage.replace('Автор:', '');
-
-      const linksUrl = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(authorPage)}&prop=links&format=json&origin=*`;
-      const linksRes = await fetch(linksUrl);
-      const linksData = await linksRes.json();
-      const allLinks = (linksData.parse?.links || [])
-        .filter(l => l.ns === 0)
-        .map(l => l['*']);
-
-      allLinks.forEach(t => {
-        const cleanSlash = t.replace('/ДО', '');
-        if (cleanSlash.includes('/')) return;
-        if (BAN_WORDS.some(w => t.toLowerCase().includes(w))) return;
-
-        let cleanTitle = cleanSlash.replace(/\s*\(.*?\)/g, '').trim();
-        if (cleanTitle.length < 2) return;
-
-        if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
-          finalCards.push({
-            rawTitle: t,
-            cleanTitle: cleanTitle,
-            author: authorCleanName,
-            snippet: `Официальное сочинение автора ${authorCleanName} из фонда Викитеки.`
-          });
-        }
-      });
-    }
-
-    if (finalCards.length === 0) {
-      const searchUrl = `https://ru.wikisource.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.trim())}&srlimit=45&srnamespace=0&format=json&origin=*`;
-      const sRes = await fetch(searchUrl);
-      const sData = await sRes.json();
-      const results = sData.query?.search || [];
-
-      results.forEach(item => {
-        const t = item.title;
-        const lower = t.toLowerCase();
-
-        if (BAN_WORDS.some(w => lower.includes(w))) return;
-        const cleanSlash = t.replace('/ДО', '');
-        if (cleanSlash.includes('/')) return;
-
-        let cleanTitle = cleanSlash.replace(/\s*\(.*?\)/g, '').trim();
-        let authorMatch = t.match(/\((.*?)\)/);
-        let authorHint = authorMatch ? authorMatch[1].split(';')[0].replace('/ДО', '').trim() : 'Классика';
-
-        if (authorHint && !authorHint.toLowerCase().includes(cleanQuery) && cleanTitle.toLowerCase().includes(cleanQuery)) {
-          return;
-        }
-        if (lower.startsWith('о ') || lower.startsWith('об ') || lower.includes('рецензия')) return;
-
-        if (!finalCards.some(c => c.cleanTitle.toLowerCase() === cleanTitle.toLowerCase())) {
-          finalCards.push({
-            rawTitle: t,
-            cleanTitle: cleanTitle,
-            author: authorHint,
-            snippet: item.snippet.replace(/<[^>]*>?/gm, '')
-          });
-        }
-      });
-    }
-
-    renderBookCards(finalCards);
-  } catch (err) {
-    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка поиска. Проверьте интернет!</div>';
+    booksGrid.innerHTML = '<div style="color:#c97a7a; margin-top:40px;">Ошибка загрузки архива. Проверьте интернет!</div>';
   }
 }
 
 function renderBookCards(cards) {
   booksGrid.innerHTML = '';
   if (cards.length === 0) {
-    booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Книг не найдено. Попробуйте другой запрос!</div>';
+    booksGrid.innerHTML = '<div style="color:#8f7e70; margin-top:40px;">Шедевров не найдено. Попробуйте другой запрос!</div>';
     return;
   }
 
@@ -240,7 +204,7 @@ function showBookDetails(book) {
 
   document.getElementById('details-title').textContent = book.cleanTitle;
   document.getElementById('details-author').textContent = book.author;
-  document.getElementById('details-description').textContent = book.snippet || 'Классическое литературное произведение в общественном достоянии.';
+  document.getElementById('details-description').textContent = book.snippet;
 
   document.getElementById('details-cover-title').textContent = book.cleanTitle.toUpperCase();
   document.getElementById('details-cover-author').textContent = book.author;
@@ -252,7 +216,6 @@ window.closeDetailsView = function() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-// ВЫПАДАЮЩИЙ СПИСОК СКАЧИВАНИЯ
 window.toggleDownloadDropdown = function(e) {
   e.stopPropagation();
   const dropdown = document.getElementById('download-dropdown');
@@ -270,18 +233,31 @@ window.addEventListener('click', (e) => {
   }
 });
 
-// СКАЧИВАНИЕ ТЕКСТА КНИГИ
+// СКАЧИВАНИЕ ТЕКСТА КНИГИ ИЗ ВИКИТЕКИ ПО НАЗВАНИЮ ИЗ ВИКИПЕДИИ
 async function fetchCleanBookText(rawTitle, displayTitle) {
   if (cachedBookText) return cachedBookText;
 
   loadingOverlay.style.display = 'flex';
-  loadingStatus.textContent = `Загружаем текст «${displayTitle}»...`;
+  loadingStatus.textContent = `Ищем текст «${displayTitle}» в библиотеке...`;
 
   try {
+    // 1. Ищем точную страницу с текстом в архивах Викитеки
     let targetPage = rawTitle;
 
-    let url = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`;
-    let res = await fetch(url);
+    const findUrl = `https://ru.wikisource.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(displayTitle)}&srlimit=5&srnamespace=0&format=json&origin=*`;
+    const findRes = await fetch(findUrl);
+    const findData = await findRes.json();
+    const hits = findData.query?.search || [];
+
+    if (hits.length > 0) {
+      // Ищем прямое совпадение с автором или первое совпадение
+      const bestMatch = hits.find(h => !h.title.includes('/ДО') && !h.title.includes('/')) || hits[0];
+      targetPage = bestMatch.title;
+    }
+
+    // 2. Скачиваем найденное произведение из Викитеки
+    loadingStatus.textContent = `Скачиваем главы «${displayTitle}»...`;
+    let res = await fetch(`https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`);
     let data = await res.json();
 
     if (!data.parse || !data.parse.text) throw new Error();
@@ -289,82 +265,84 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
     let tempDiv = document.createElement('div');
     tempDiv.innerHTML = data.parse.text['*'];
 
-    if (tempDiv.innerText.includes('Русские издания') || tempDiv.innerText.length < 1200) {
-      const editionLink = (data.parse.links || []).find(l => 
-        l.ns === 0 && 
-        l['*'].startsWith(displayTitle) && 
-        l['*'].includes('(') && 
-        !l['*'].endsWith('/ДО')
-      );
+    // Если попали на список переводов
+    const pageLinks = Array.from(tempDiv.querySelectorAll('a'))
+      .map(a => decodeURIComponent(a.getAttribute('href') || ''))
+      .filter(href => href.startsWith('/wiki/') && !href.includes(':'))
+      .map(href => href.replace('/wiki/', '').replace(/_/g, ' '));
 
-      if (editionLink) {
-        targetPage = editionLink['*'];
-        url = `https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`;
-        res = await fetch(url);
-        data = await res.json();
-        tempDiv.innerHTML = data.parse.text['*'];
-      }
+    const realBookLink = pageLinks.find(title => 
+      title.startsWith(displayTitle) && 
+      title.includes('(') && 
+      !title.endsWith('/ДО')
+    );
+
+    if (realBookLink && (tempDiv.innerText.includes('издания') || tempDiv.innerText.length < 1600)) {
+      targetPage = realBookLink;
+      res = await fetch(`https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(targetPage)}&prop=text|links&format=json&origin=*`);
+      data = await res.json();
+      tempDiv.innerHTML = data.parse.text['*'];
     }
 
-    tempDiv.querySelectorAll(`
-      .mw-editsection, .navigation, .infobox, style, script, .reference, .noprint,
-      .licenseContainer, .boilerplate, .headerContainer, .headertemplate, .ws-noexport,
-      .textinfo, .ws-summary, table, .toc, .pagelist, [id*="license"], [class*="license"], [id*="header"]
-    `).forEach(el => el.remove());
+    // Скачиваем главы, если книга разбита на подстраницы
+    const chapterLinks = Array.from(tempDiv.querySelectorAll('a'))
+      .map(a => decodeURIComponent(a.getAttribute('href') || ''))
+      .filter(href => href.startsWith('/wiki/') && !href.includes(':'))
+      .map(href => href.replace('/wiki/', '').replace(/_/g, ' '))
+      .filter(title => {
+        if (!title.startsWith(targetPage + '/')) return false;
+        const lower = title.toLowerCase();
+        return !lower.includes('/до') && 
+               !lower.includes('содержание') && 
+               !lower.includes('оглавление') && 
+               !lower.includes('таблица соответствия') && 
+               !lower.includes('соответствие страниц') && 
+               !lower.includes('указатель') && 
+               !lower.includes('примечания');
+      });
 
-    let text = tempDiv.innerText.trim();
+    const uniqueChapters = [...new Set(chapterLinks)].slice(0, 30);
+    let text = '';
 
-    const ignoredSubpages = [
-      'содержание', 'оглавление', 'таблица соответствия', 'соответствие страниц',
-      'указатель', 'примечания', 'варианты', 'иллюстрации', 'список опечаток',
-      'до', 'источники', 'библиография'
-    ];
+    if (uniqueChapters.length > 0) {
+      loadingStatus.textContent = `Качаем все главы книги (${uniqueChapters.length} глав)...`;
 
-    if (text.length < 4000 && data.parse.links) {
-      const subchapters = data.parse.links
-        .filter(l => {
-          const title = l['*'];
-          if (!title.startsWith(targetPage + '/')) return false;
-          const lower = title.toLowerCase();
-          return !ignoredSubpages.some(sub => lower.includes('/' + sub) || lower.endsWith(sub));
-        })
-        .map(l => l['*']);
+      const chapterPromises = uniqueChapters.map(ch => 
+        fetch(`https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(ch)}&prop=text&format=json&origin=*`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.parse?.text) {
+              const div = document.createElement('div');
+              div.innerHTML = d.parse.text['*'];
+              div.querySelectorAll(`
+                .mw-editsection, .navigation, .infobox, style, script, .reference, .noprint,
+                .licenseContainer, .boilerplate, .headerContainer, .headertemplate, .ws-noexport,
+                .textinfo, .ws-summary, table, .toc, .pagelist, [id*="license"], [class*="license"], [id*="header"]
+              `).forEach(el => el.remove());
+              return div.innerText.trim();
+            }
+            return '';
+          })
+          .catch(() => '')
+      );
 
-      if (subchapters.length > 0) {
-        loadingStatus.textContent = `Качаем все части и главы...`;
-        const chaptersToDownload = subchapters.slice(0, 25);
+      const loaded = await Promise.all(chapterPromises);
+      text = loaded.filter(t => t.length > 50).join('\n\n');
+    }
 
-        const chapterPromises = chaptersToDownload.map(chTitle => 
-          fetch(`https://ru.wikisource.org/w/api.php?action=parse&page=${encodeURIComponent(chTitle)}&prop=text&format=json&origin=*`)
-            .then(r => r.json())
-            .then(subData => {
-              if (subData.parse && subData.parse.text) {
-                const subDiv = document.createElement('div');
-                subDiv.innerHTML = subData.parse.text['*'];
-                subDiv.querySelectorAll(`
-                  .mw-editsection, .navigation, .infobox, style, script, .reference, .noprint,
-                  .licenseContainer, .boilerplate, .headerContainer, .headertemplate, .ws-noexport,
-                  .textinfo, .ws-summary, table, .toc, .pagelist, [id*="license"], [class*="license"], [id*="header"]
-                `).forEach(el => el.remove());
-                return subDiv.innerText.trim();
-              }
-              return '';
-            })
-            .catch(() => '')
-        );
-
-        const loadedChapters = await Promise.all(chapterPromises);
-        const fullCombined = loadedChapters.filter(t => t.length > 50).join('\n\n');
-
-        if (fullCombined.length > 500) text = fullCombined;
-      }
+    if (!text || text.length < 500) {
+      tempDiv.querySelectorAll(`
+        .mw-editsection, .navigation, .infobox, style, script, .reference, .noprint,
+        .licenseContainer, .boilerplate, .headerContainer, .headertemplate, .ws-noexport,
+        .textinfo, .ws-summary, table, .toc, .pagelist, [id*="license"], [class*="license"], [id*="header"]
+      `).forEach(el => el.remove());
+      text = tempDiv.innerText.trim();
     }
 
     const lines = text.split(/\r?\n/);
     const cleanLines = lines.filter(line => {
       const trimmed = line.trim();
       if (!trimmed) return false;
-
       if (/^\d+[\s\.\–\-\—\t]+\d+[а-яa-z]?$/i.test(trimmed)) return false;
       if (/^\d{1,4}$/.test(trimmed)) return false;
 
@@ -372,7 +350,6 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
       return !l.includes('общественное достояние') &&
              !l.includes('ст. 1281') &&
              !l.includes('авторского права') &&
-             !l.includes('таблица соответствия') &&
              !l.includes('русские издания') &&
              !l.includes('az.lib.ru') &&
              !l.includes('источник:') &&
@@ -389,7 +366,7 @@ async function fetchCleanBookText(rawTitle, displayTitle) {
     return text;
   } catch (e) {
     loadingOverlay.style.display = 'none';
-    alert('Ошибка при загрузке текста произведения.');
+    alert('Не удалось загрузить полный текст этого издания из архива.');
     return null;
   }
 }
@@ -417,7 +394,7 @@ function escapeXml(unsafe) {
   });
 }
 
-// ОБРАБОТКА ВЫБРАННОГО ФОРМАТА СКАЧИВАНИЯ
+// СКАЧИВАНИЕ ФАЙЛОВ
 window.handleFormatClick = async function(format) {
   closeDownloadDropdown();
   if (!currentSelectedBook) return;
@@ -428,7 +405,6 @@ window.handleFormatClick = async function(format) {
   const title = currentSelectedBook.cleanTitle;
   const author = currentSelectedBook.author;
 
-  // 1. ФОРМАТ FB2 (ДЛЯ РИДЕРОВ)
   if (format === 'fb2') {
     const paragraphsXml = text.split(/\r?\n/)
       .map(p => p.trim())
@@ -457,15 +433,11 @@ window.handleFormatClick = async function(format) {
     const blob = new Blob([fb2Xml], { type: 'application/x-fictionbook+xml;charset=utf-8' });
     triggerDownload(blob, `${title}.fb2`);
   }
-
-  // 2. ФОРМАТ TXT (ОБЫЧНЫЙ ТЕКСТ)
   else if (format === 'txt') {
     const content = `${title.toUpperCase()}\nАвтор: ${author}\n\n${text}`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     triggerDownload(blob, `${title}.txt`);
   }
-
-  // 3. ФОРМАТ HTML (ОФФЛАЙН ВЕБ-КНИГА)
   else if (format === 'html') {
     const paragraphsHtml = text.split(/\r?\n/)
       .map(p => p.trim())
@@ -494,8 +466,6 @@ window.handleFormatClick = async function(format) {
     const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
     triggerDownload(blob, `${title}.html`);
   }
-
-  // 4. ФОРМАТ DOC (ДЛЯ MICROSOFT WORD)
   else if (format === 'doc') {
     const paragraphsHtml = text.split(/\r?\n/)
       .map(p => p.trim())
@@ -515,10 +485,7 @@ window.handleFormatClick = async function(format) {
     const blob = new Blob([docContent], { type: 'application/msword;charset=utf-8' });
     triggerDownload(blob, `${title}.doc`);
   }
-
-  // 5. ФОРМАТ EPUB (ДЛЯ СМАРТФОНОВ И РИДЕРОВ)
   else if (format === 'epub') {
-    // Генерируем компактный EPUB (на базе совместимого XHTML контейнера)
     const paragraphsHtml = text.split(/\r?\n/)
       .map(p => p.trim())
       .filter(p => p.length > 0)
@@ -548,7 +515,7 @@ window.handleFormatClick = async function(format) {
   }
 };
 
-// 3. КНОПКА «ЧИТАТЬ ОНЛАЙН (3D)»
+// ЧИТАТЬ В 3D
 document.getElementById('btn-read-3d').addEventListener('click', async () => {
   if (!currentSelectedBook) return;
   const text = await fetchCleanBookText(currentSelectedBook.rawTitle, currentSelectedBook.cleanTitle);
@@ -558,9 +525,7 @@ document.getElementById('btn-read-3d').addEventListener('click', async () => {
   openBookReader(currentSelectedBook.cleanTitle, currentSelectedBook.author, pages);
 });
 
-// ==========================================================
-// 4. 3D-ЧИТАЛКА
-// ==========================================================
+// РЕЗЧИК СТРАНИЦ
 function autoSplitTextToPages(rawText) {
   const isMobile = window.innerWidth <= 768;
   const charsPerLine = isMobile ? 32 : 46;
@@ -617,6 +582,7 @@ function autoSplitTextToPages(rawText) {
   return pages;
 }
 
+// 3D-ЧИТАЛКА
 function openBookReader(title, author, pages) {
   detailsView.style.display = 'none';
   catalogView.style.display = 'none';
@@ -687,6 +653,7 @@ backToDetailsBtn.addEventListener('click', () => {
   }
 });
 
+// КЛИКИ ПО КАТЕГОРИЯМ
 filterButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     filterButtons.forEach(b => b.classList.remove('active'));
@@ -700,9 +667,10 @@ filterButtons.forEach(btn => {
   });
 });
 
-btnSearch.addEventListener('click', () => searchBooks(searchInput.value));
+// ПОИСК ПО КНОПКЕ И ENTER
+btnSearch.addEventListener('click', () => searchViaWikipedia(searchInput.value));
 searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') searchBooks(searchInput.value);
+  if (e.key === 'Enter') searchViaWikipedia(searchInput.value);
 });
 
 window.addEventListener('keydown', (e) => {
@@ -711,4 +679,5 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') currentFlipBook.flipPrev();
 });
 
+// СТАРТ С ФАНТАСТИКИ
 loadCategory('Категория:Фантастика');
