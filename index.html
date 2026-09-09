@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Paperly</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
-  <link rel="stylesheet" href="style.css?v=14">
+  
+  <!-- ЯДЕРНЫЙ СБРОС КЭША -->
+  <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 
@@ -25,11 +27,11 @@
     </div>
   </div>
 
-  <!-- Индикатор загрузки -->
-  <div id="loading-overlay">
+  <!-- Индикатор загрузки (ТЕПЕРЬ ЖЕЛЕЗНО СКРЫТ ПРИ СТАРТЕ) -->
+  <div id="loading-overlay" style="display: none;">
     <div class="spinner"></div>
     <div id="loading-status" style="font-size: 18px; color: #f1dfc5; margin-bottom: 8px;">Скачиваем книгу...</div>
-    <div style="font-size: 13px; color: #8f7e70;">Форматируем и готовим разворот</div>
+    <div style="font-size: 13px; color: #8f7e70;">Нарезаем страницы в 3D разворот</div>
   </div>
 
   <!-- 1. ЭКРАН КАТАЛОГА -->
@@ -146,6 +148,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.js"></script>
-  <script src="script.js?v=14"></script>
+  <!-- ЯДЕРНЫЙ СБРОС КЭША -->
+  <script src="script.js?v=16"></script>
 </body>
 </html>
